@@ -6,6 +6,7 @@ plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
+    alias(libs.plugins.serialization)
 }
 
 kotlin {
@@ -29,6 +30,10 @@ kotlin {
         androidMain.dependencies {
             implementation(compose.preview)
             implementation(libs.androidx.activity.compose)
+
+            implementation(libs.koin.android)
+            implementation(libs.koin.androidx.compose)
+
         }
         commonMain.dependencies {
             implementation(compose.runtime)
@@ -39,6 +44,21 @@ kotlin {
             implementation(compose.components.uiToolingPreview)
             implementation(libs.androidx.lifecycle.viewmodelCompose)
             implementation(libs.androidx.lifecycle.runtimeCompose)
+
+            api(libs.koin.core)
+            implementation(libs.koin.compose.viewmodel)
+
+            implementation(libs.material.icons.extended)
+
+            implementation(libs.ktor.client.core)
+
+            implementation(libs.ktor.client.content.negotiation)
+            implementation(libs.ktor.serialization.kotlinx.json)
+
+            implementation(libs.ktor.client.logging)
+
+            implementation("org.jetbrains.androidx.navigation:navigation-compose:2.9.1")
+
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)

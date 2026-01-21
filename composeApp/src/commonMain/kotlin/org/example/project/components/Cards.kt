@@ -38,9 +38,9 @@ enum class Card(
     CLUBS_8("8_of_clubs", Suit.CLUBS, Rank.EIGHT, Res.drawable._8_of_clubs),
     CLUBS_9("9_of_clubs", Suit.CLUBS, Rank.NINE, Res.drawable._9_of_clubs),
     CLUBS_10("10_of_clubs", Suit.CLUBS, Rank.TEN, Res.drawable._10_of_clubs),
-    CLUBS_J("jack_of_clubs", Suit.CLUBS, Rank.JACK, Res.drawable.jack_of_clubs),
-    CLUBS_Q("queen_of_clubs", Suit.CLUBS, Rank.QUEEN, Res.drawable.queen_of_clubs),
-    CLUBS_K("king_of_clubs", Suit.CLUBS, Rank.KING, Res.drawable.king_of_clubs),
+    CLUBS_J("jack_of_clubs", Suit.CLUBS, Rank.JACK, Res.drawable.jack_of_clubs2),
+    CLUBS_Q("queen_of_clubs", Suit.CLUBS, Rank.QUEEN, Res.drawable.queen_of_clubs2),
+    CLUBS_K("king_of_clubs", Suit.CLUBS, Rank.KING, Res.drawable.king_of_clubs2),
     CLUBS_A("ace_of_clubs", Suit.CLUBS, Rank.ACE, Res.drawable.ace_of_clubs),
 
 
@@ -53,9 +53,9 @@ enum class Card(
     DIAMONDS_8("8_of_diamonds", Suit.DIAMONDS, Rank.EIGHT, Res.drawable._8_of_diamonds),
     DIAMONDS_9("9_of_diamonds", Suit.DIAMONDS, Rank.NINE, Res.drawable._9_of_diamonds),
     DIAMONDS_10("10_of_diamonds", Suit.DIAMONDS, Rank.TEN, Res.drawable._10_of_diamonds),
-    DIAMONDS_J("jack_of_diamonds", Suit.DIAMONDS, Rank.JACK, Res.drawable.jack_of_diamonds),
-    DIAMONDS_Q("queen_of_diamonds", Suit.DIAMONDS, Rank.QUEEN, Res.drawable.queen_of_diamonds),
-    DIAMONDS_K("king_of_diamonds", Suit.DIAMONDS, Rank.KING, Res.drawable.king_of_diamonds),
+    DIAMONDS_J("jack_of_diamonds", Suit.DIAMONDS, Rank.JACK, Res.drawable.jack_of_diamonds2),
+    DIAMONDS_Q("queen_of_diamonds", Suit.DIAMONDS, Rank.QUEEN, Res.drawable.queen_of_diamonds2),
+    DIAMONDS_K("king_of_diamonds", Suit.DIAMONDS, Rank.KING, Res.drawable.king_of_diamonds2),
     DIAMONDS_A("ace_of_diamonds", Suit.DIAMONDS, Rank.ACE, Res.drawable.ace_of_diamonds),
 
 
@@ -68,9 +68,9 @@ enum class Card(
     HEARTS_8("8_of_hearts", Suit.HEARTS, Rank.EIGHT, Res.drawable._8_of_hearts),
     HEARTS_9("9_of_hearts", Suit.HEARTS, Rank.NINE, Res.drawable._9_of_hearts),
     HEARTS_10("10_of_hearts", Suit.HEARTS, Rank.TEN, Res.drawable._10_of_hearts),
-    HEARTS_J("jack_of_hearts", Suit.HEARTS, Rank.JACK, Res.drawable.jack_of_hearts),
-    HEARTS_Q("queen_of_hearts", Suit.HEARTS, Rank.QUEEN, Res.drawable.queen_of_hearts),
-    HEARTS_K("king_of_hearts", Suit.HEARTS, Rank.KING, Res.drawable.king_of_hearts),
+    HEARTS_J("jack_of_hearts", Suit.HEARTS, Rank.JACK, Res.drawable.jack_of_hearts2),
+    HEARTS_Q("queen_of_hearts", Suit.HEARTS, Rank.QUEEN, Res.drawable.queen_of_hearts2),
+    HEARTS_K("king_of_hearts", Suit.HEARTS, Rank.KING, Res.drawable.king_of_hearts2),
     HEARTS_A("ace_of_hearts", Suit.HEARTS, Rank.ACE, Res.drawable.ace_of_hearts),
 
 
@@ -83,8 +83,8 @@ enum class Card(
     SPADES_8("8_of_spades", Suit.SPADES, Rank.EIGHT, Res.drawable._8_of_spades),
     SPADES_9("9_of_spades", Suit.SPADES, Rank.NINE, Res.drawable._9_of_spades),
     SPADES_10("10_of_spades", Suit.SPADES, Rank.TEN, Res.drawable._10_of_spades),
-    SPADES_J("jack_of_spades", Suit.SPADES, Rank.JACK, Res.drawable.jack_of_spades),
-    SPADES_Q("queen_of_spades", Suit.SPADES, Rank.QUEEN, Res.drawable.queen_of_spades),
-    SPADES_K("king_of_spades", Suit.SPADES, Rank.KING, Res.drawable.king_of_spades),
+    SPADES_J("jack_of_spades", Suit.SPADES, Rank.JACK, Res.drawable.jack_of_spades2),
+    SPADES_Q("queen_of_spades", Suit.SPADES, Rank.QUEEN, Res.drawable.queen_of_spades2),
+    SPADES_K("king_of_spades", Suit.SPADES, Rank.KING, Res.drawable.king_of_spades2),
     SPADES_A("ace_of_spades", Suit.SPADES, Rank.ACE, Res.drawable.ace_of_spades);
 }
