@@ -1,4 +1,4 @@
-package org.example.project.models
+package org.example.project.domain.models
 
 import kotlinx.serialization.Serializable
 
@@ -7,5 +7,5 @@ import kotlinx.serialization.Serializable
 data class Game(
     val score:Map<String,Double>,
     val round:Int=5,
-    val roundState:RoundState
+    val roundState: RoundState
 )

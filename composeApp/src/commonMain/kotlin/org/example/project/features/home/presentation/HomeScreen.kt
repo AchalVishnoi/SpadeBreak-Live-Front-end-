@@ -35,6 +35,7 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
@@ -47,7 +48,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import org.example.project.components.Avatar
+import org.example.project.features.home.presentation.HomeEvents
 import org.example.project.features.home.presentation.HomeIntent
+import org.example.project.serverRoom.SocketEngine
 import org.example.project.ui.component.GlassCard
 import org.example.project.ui.component.buttonWithoutRipple
 import org.example.project.ui.effects.bouncingClick
@@ -59,10 +62,27 @@ import spadebreaklive.composeapp.generated.resources.Res
 import spadebreaklive.composeapp.generated.resources.blue_wooden_background
 
 @Composable
-fun HomeScreen() {
+fun HomeScreen(viewModel: HomeViewModel,
+               navigateToRoom:(String)->Unit,
+               socketEngine: SocketEngine) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     val viewmodel = koinViewModel<HomeViewModel>()
+
+
+    LaunchedEffect(Unit){
+        viewmodel.events.collect{
+            when(it){
+                is HomeEvents.NavigateToRoom ->{
+
+                    println("navigating to room: ${it.room.id}")
+                    navigateToRoom(it.room.id)
+
+                }
+                is HomeEvents.ShowToast -> println(it.message)
+            }
+        }
+    }
 
     ModalNavigationDrawer(
         drawerState=drawerState,
@@ -162,7 +182,7 @@ private fun Content(viewModel: HomeViewModel,onEditAvatarClick:()->Unit){
                 ){
 
                     buttonWithoutRipple(
-                        onClick = { /*TODO*/ }
+                        onClick = { viewModel.onIntent(HomeIntent.CreateRoomClicked) }
                     ){
                         Text("Create Room",
                             style = MaterialTheme.typography.labelLarge)

@@ -34,6 +34,8 @@ kotlin {
             implementation(libs.koin.android)
             implementation(libs.koin.androidx.compose)
 
+            implementation(libs.ktor.client.okhttp)
+
         }
         commonMain.dependencies {
             implementation(compose.runtime)
@@ -56,6 +58,7 @@ kotlin {
             implementation(libs.ktor.serialization.kotlinx.json)
 
             implementation(libs.ktor.client.logging)
+
 
             implementation("org.jetbrains.androidx.navigation:navigation-compose:2.9.1")
 

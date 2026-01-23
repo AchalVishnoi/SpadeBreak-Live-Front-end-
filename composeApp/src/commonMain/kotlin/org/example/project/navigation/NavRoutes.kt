@@ -1,0 +1,19 @@
+package org.example.project.navigation
+
+import kotlinx.serialization.Serializable
+
+
+@Serializable
+sealed class NavRoutes {
+    @Serializable
+    data object Splash : NavRoutes()
+
+    @Serializable
+    data object Home : NavRoutes()
+
+    @Serializable
+    data class Room(val roomId:String) : NavRoutes()
+
+    @Serializable
+    data object Game : NavRoutes()
+}

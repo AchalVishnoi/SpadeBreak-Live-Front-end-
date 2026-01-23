@@ -1,4 +1,4 @@
-package org.example.project.models
+package org.example.project.domain.models
 
 import kotlinx.serialization.Serializable
 
@@ -6,8 +6,8 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class Player(
     val id:String,
-    val nickName:String,
+    val nickname:String,
     val host:Boolean,
-    val isReady:Boolean,
+    val ready:Boolean,
     val avatar:String
 )
