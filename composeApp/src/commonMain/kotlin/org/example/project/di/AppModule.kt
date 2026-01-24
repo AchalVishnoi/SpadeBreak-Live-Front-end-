@@ -7,5 +7,6 @@ fun appModule():List<Module> = listOf(
     playingBoardModel(),
     homeModel(),
     soundPlayerModule(),
-    networkModule()
+    networkModule(),
+    coreModule()
 )

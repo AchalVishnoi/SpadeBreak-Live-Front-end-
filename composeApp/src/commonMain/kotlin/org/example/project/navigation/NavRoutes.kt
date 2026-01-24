@@ -12,8 +12,12 @@ sealed class NavRoutes {
     data object Home : NavRoutes()
 
     @Serializable
-    data class Room(val roomId:String) : NavRoutes()
+    data class PlayRoom(val roomId:String,val playerId:String) : NavRoutes()
 
     @Serializable
     data object Game : NavRoutes()
+
+    @Serializable
+    data class WaitingRoom(val roomId:String,val playerId:String) : NavRoutes()
+
 }

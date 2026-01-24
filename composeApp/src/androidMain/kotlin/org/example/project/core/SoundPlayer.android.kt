@@ -12,8 +12,9 @@ actual class SoundPlayer(context: Context){
 
     private val soundMap= mapOf(
 
-        UiSound.CLICK to soundPool.load(context, R.raw.button_click,1)
-
+        UiSound.CLICK to soundPool.load(context, R.raw.button_click,1),
+        UiSound.WATER_DROP to soundPool.load(context,R.raw.water_drip,1),
+        UiSound.READY_SOUND to soundPool.load(context,R.raw.ready_sound,1)
 
     )
 

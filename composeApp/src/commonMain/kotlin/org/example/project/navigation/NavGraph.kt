@@ -11,7 +11,8 @@ import androidx.navigation.toRoute
 import org.example.project.features.board.presentation.PlayingBoardScreen
 import org.example.project.features.entry.presentation.HomeScreen
 import org.example.project.features.entry.presentation.HomeViewModel
-import org.example.project.serverRoom.SocketEngine
+import org.example.project.features.waitingRoom.presentation.WaitingRoomScreen
+import org.example.project.serverRoom.socket.SocketEngine
 import org.koin.compose.getKoin
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -20,7 +21,7 @@ fun NavGraph(){
 
     val navController = rememberNavController()
     val homeViewModel:HomeViewModel= koinViewModel()
-    val socketEngine:SocketEngine= getKoin().get()
+    val socketEngine: SocketEngine = getKoin().get()
 
 
     NavHost(
@@ -38,16 +39,33 @@ fun NavGraph(){
         }
 
         composable<NavRoutes.Home> {
-            HomeScreen(homeViewModel, navigateToRoom = {roomId->
-                navController.navigate(NavRoutes.Room(roomId))
-                }
-                ,socketEngine)
+            HomeScreen(viewModel = homeViewModel,
+                navigateToWaitingRoom = {roomId,playerId->
+                                        navController.popBackStack()
+                                        navController.navigate(NavRoutes.WaitingRoom(roomId,playerId))
+                                        },
+                socketEngine=socketEngine)
         }
 
-        composable<NavRoutes.Room> {
-            val room =it.toRoute<NavRoutes.Room>()
+        composable<NavRoutes.WaitingRoom> {
+            val room =it.toRoute<NavRoutes.WaitingRoom>()
+            WaitingRoomScreen(
+                waitingRoomViewModel = koinViewModel(),
+                roomId = room.roomId,
+                playerId = room.playerId,
+                navigateToPlayRoom = {roomId,playerId->
+                    navController.popBackStack()
+                    navController.navigate(NavRoutes.PlayRoom(roomId,playerId))
+                }
+            )
+        }
+
+        composable<NavRoutes.PlayRoom> {
+            val room =it.toRoute<NavRoutes.PlayRoom>()
             PlayingBoardScreen(socketEngine,room.roomId)
         }
+
+
 
     }
 

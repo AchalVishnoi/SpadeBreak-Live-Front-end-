@@ -23,7 +23,7 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.example.project.components.Card
-import org.example.project.serverRoom.SocketEngine
+import org.example.project.serverRoom.socket.SocketEngine
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.viewmodel.koinViewModel
@@ -31,7 +31,7 @@ import spadebreaklive.composeapp.generated.resources.Res
 import spadebreaklive.composeapp.generated.resources.blue_wooden_background
 
 @Composable
-fun PlayingBoardScreen(socketEngine: SocketEngine,roomId:String="1234") {
+fun PlayingBoardScreen(socketEngine: SocketEngine, roomId:String="1234") {
 
     LaunchedEffect(Unit){
      println("this is room: ${roomId}")

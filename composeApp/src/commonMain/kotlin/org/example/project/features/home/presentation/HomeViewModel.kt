@@ -53,17 +53,18 @@ class HomeViewModel(private val repo: HomeRepository):ViewModel() {
             return
         }
 
+
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true)
             val result = repo.createRoom(_uiState.value.nickName,_uiState.value.avatar.name)
             println(result)
             result.onSuccess {
-                _events.emit(HomeEvents.NavigateToRoom(it))
-                println("room id:"+it.id)
+                _uiState.value = _uiState.value.copy(room = it.room)
+                _events.emit(HomeEvents.NavigateToWaitingRoom(it.room,it.playerId,it.reconnectToken))
+                println("room id:"+it.room.id)
             }.onError {
                 when(it){
                     is DataError.Remote.ServerMessage ->{ _events.emit(HomeEvents.ShowToast(it.message?:"field to process request, try again!!"))}
-
                     else -> _events.emit(HomeEvents.ShowToast("field to process request, try again!!"))
                 }
             }
@@ -90,11 +91,11 @@ class HomeViewModel(private val repo: HomeRepository):ViewModel() {
             val result = repo.joinRoom(
                 _uiState.value.nickName,
                 _uiState.value.avatar.id,
-                _uiState.value.roomId)
+                _uiState.value.enterdRoomId)
             println(result)
             result.onSuccess {
-                _events.emit(HomeEvents.NavigateToRoom(it))
-
+                _uiState.value = _uiState.value.copy(room = it.room)
+                _events.emit(HomeEvents.NavigateToWaitingRoom(it.room,it.playerId,it.reconnectToken))
             }.onError {
                 when(it){
                     is DataError.Remote.ServerMessage ->{ _events.emit(HomeEvents.ShowToast(it.message?:"field to process request, try again!!"))}

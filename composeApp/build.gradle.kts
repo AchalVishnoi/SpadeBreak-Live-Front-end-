@@ -61,6 +61,10 @@ kotlin {
 
 
             implementation("org.jetbrains.androidx.navigation:navigation-compose:2.9.1")
+            implementation(libs.navigation3.ui)
+
+            implementation(libs.multiplatform.settings)
+            implementation(libs.multiplatform.settings.no.arg)
 
         }
         commonTest.dependencies {

@@ -1,15 +1,25 @@
 package org.example.project.domain.models
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonElement
 
 
 @Serializable
 data class GameMessage<T>(
         val type: MessageType,
-        val playerId:String,
+        val playerId:String?,
         val roomId:String,
         val playLoad:T,
         val timeStamp:Long
+)
+
+@Serializable
+data class GameMessageEnvelope(
+    val type: MessageType,
+    val playerId:String?,
+    val roomId:String,
+    val playLoad:JsonElement?,
+    val timeStamp:Long
 )
 
 @Serializable

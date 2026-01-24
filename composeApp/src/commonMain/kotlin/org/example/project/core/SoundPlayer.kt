@@ -10,5 +10,7 @@ enum class UiSound {
     ERROR,
     CARD_SHUFFLE,
     GAME_WIN,
-    GAME_LOSE
+    GAME_LOSE,
+    WATER_DROP,
+    READY_SOUND
 }

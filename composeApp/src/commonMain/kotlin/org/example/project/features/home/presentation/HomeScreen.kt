@@ -48,35 +48,41 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import org.example.project.components.Avatar
+import org.example.project.core.prefrences.PrefrenceManager
 import org.example.project.features.home.presentation.HomeEvents
 import org.example.project.features.home.presentation.HomeIntent
-import org.example.project.serverRoom.SocketEngine
+import org.example.project.serverRoom.socket.SocketEngine
 import org.example.project.ui.component.GlassCard
 import org.example.project.ui.component.buttonWithoutRipple
 import org.example.project.ui.effects.bouncingClick
 import org.example.project.ui.theme.darkPrimaryBlue
 import org.example.project.ui.theme.lightPrimaryBlue
 import org.jetbrains.compose.resources.painterResource
+import org.koin.compose.getKoin
 import org.koin.compose.viewmodel.koinViewModel
 import spadebreaklive.composeapp.generated.resources.Res
 import spadebreaklive.composeapp.generated.resources.blue_wooden_background
 
 @Composable
 fun HomeScreen(viewModel: HomeViewModel,
-               navigateToRoom:(String)->Unit,
-               socketEngine: SocketEngine) {
+               navigateToWaitingRoom:(String,String)->Unit,
+               socketEngine: SocketEngine
+) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     val viewmodel = koinViewModel<HomeViewModel>()
+    val prefrenceManager:PrefrenceManager= getKoin().get()
 
 
     LaunchedEffect(Unit){
         viewmodel.events.collect{
             when(it){
-                is HomeEvents.NavigateToRoom ->{
+                is HomeEvents.NavigateToWaitingRoom ->{
 
                     println("navigating to room: ${it.room.id}")
-                    navigateToRoom(it.room.id)
+                    prefrenceManager.saveReconnectToken(it.reconnectionToken)
+                    navigateToWaitingRoom(it.room.id,it.playerId)
+
 
                 }
                 is HomeEvents.ShowToast -> println(it.message)

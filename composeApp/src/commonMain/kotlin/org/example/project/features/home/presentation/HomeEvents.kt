@@ -5,5 +5,5 @@ import org.example.project.domain.models.Room
 
 sealed class HomeEvents {
     data class ShowToast(val message: String):HomeEvents()
-    data class NavigateToRoom(val room: Room):HomeEvents()
+    data class NavigateToWaitingRoom(val room: Room, val playerId:String, val reconnectionToken:String):HomeEvents()
 }

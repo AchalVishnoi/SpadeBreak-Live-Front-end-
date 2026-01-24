@@ -1,4 +1,4 @@
-package org.example.project.serverRoom
+package org.example.project.serverRoom.rest
 
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
