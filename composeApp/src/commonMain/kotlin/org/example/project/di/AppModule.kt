@@ -8,5 +8,6 @@ fun appModule():List<Module> = listOf(
     homeModel(),
     soundPlayerModule(),
     networkModule(),
-    coreModule()
+    coreModule(),
+    repositoryModule()
 )

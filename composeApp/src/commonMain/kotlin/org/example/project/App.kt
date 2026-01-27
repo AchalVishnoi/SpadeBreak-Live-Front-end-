@@ -4,13 +4,15 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.navigation.compose.NavHost
 import org.example.project.features.entry.presentation.HomeScreen
-import org.example.project.navigation.NavGraph
+import org.example.project.presentation.features.board.presentation.PlayingBoardScreen
+import org.example.project.presentation.navigation.NavGraph
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
 @Composable
 @Preview
 fun App(){
     MaterialTheme {
-       NavGraph()
+       //NavGraph()
+        PlayingBoardScreen()
     }
 }
