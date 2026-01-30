@@ -5,15 +5,16 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class RoundState (
-    val roundStatus: RoundStatus,
-    val trickNum: Int,
-    val score:Map<String, PlayerRoundScore>,
-    val handCards:Map<String, List<String>>,
-    val centerTrickedCard:Map<String,String>,
-    val playerTurn:String,
-    val trickLeaderId:String
+    val status: RoundStatus = RoundStatus.BETTING,
+    val trickNum: Int = 0,
+    val score:Map<String, PlayerRoundScore> = emptyMap(),
+    val handCards:Map<String, List<String>> = emptyMap(),
+    val centerTrickedCard:Map<String,String> = emptyMap(),
+    val playerTurn:String = "",
+    val trickLeaderId:String? = null
     )
 
+@Serializable
 enum class RoundStatus{
     BETTING,
     PLAYING,

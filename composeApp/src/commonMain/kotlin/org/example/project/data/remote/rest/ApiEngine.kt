@@ -64,6 +64,32 @@ class ApiEngine(private val client: HttpClient) {
         return response.body<Room>()
     }
 
+    suspend fun reconnectRoom(reconnectId:String):JoinRoomResponse{
+        val response=client.get(ApiRoutes.RECONNECT_ROOM_API(reconnectId)){
+            contentType(ContentType.Application.Json)
+        }
+        if(!response.status.isSuccess()) {
+            throw ClientRequestException(
+                response,
+                cachedResponseText = response.bodyAsText()
+            )
+        }
+        return response.body<JoinRoomResponse>()
+    }
+
+    suspend fun leaveRoom(reconnectId: String){
+        val response=client.get(ApiRoutes.LEAVE_ROOM_API(reconnectId)){
+            contentType(ContentType.Application.Json)
+        }
+        if(!response.status.isSuccess()) {
+            throw ClientRequestException(
+                response,
+                cachedResponseText = response.bodyAsText()
+            )
+        }
+        return response.body()
+    }
+
 
 
 

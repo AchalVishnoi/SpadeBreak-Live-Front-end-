@@ -1,10 +1,13 @@
 package org.example.project.features.entry.presentation
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -17,12 +20,17 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.TextSelectionColors
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardColors
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.Icon
@@ -30,22 +38,29 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalNavigationDrawer
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import kotlinx.coroutines.launch
 import org.example.project.components.Avatar
 import org.example.project.data.local.PrefrenceManager
@@ -65,29 +80,32 @@ import spadebreaklive.composeapp.generated.resources.blue_wooden_background
 
 @Composable
 fun HomeScreen(viewModel: HomeViewModel,
-               navigateToWaitingRoom:(String,String)->Unit,
+               navigateToWaitingRoom:(String)->Unit,
                socketEngine: SocketEngine
 ) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     val viewmodel = koinViewModel<HomeViewModel>()
-    val prefrenceManager: PrefrenceManager = getKoin().get()
-
+    val preferenceManager: PrefrenceManager = getKoin().get()
 
     LaunchedEffect(Unit){
+
         viewmodel.events.collect{
             when(it){
                 is HomeEvents.NavigateToWaitingRoom ->{
 
                     println("navigating to room: ${it.room.id}")
-                    prefrenceManager.saveReconnectToken(it.reconnectionToken)
-                    navigateToWaitingRoom(it.room.id,it.playerId)
-
-
+                    preferenceManager.saveReconnectToken(it.reconnectionToken)
+                    navigateToWaitingRoom(it.reconnectionToken)
                 }
                 is HomeEvents.ShowToast -> println(it.message)
             }
         }
+    }
+
+    LaunchedEffect(Unit){
+        val reconnectToken=preferenceManager.getReconnectToken()
+        if(reconnectToken!=null) navigateToWaitingRoom(reconnectToken)
     }
 
     ModalNavigationDrawer(
@@ -135,8 +153,12 @@ fun HomeScreen(viewModel: HomeViewModel,
 @Composable
 private fun Content(viewModel: HomeViewModel,onEditAvatarClick:()->Unit){
     val uiState by viewModel.uiState.collectAsState()
+    val showJoinRoomCard = remember { mutableStateOf(false) }
+
     Column(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ){
@@ -195,7 +217,7 @@ private fun Content(viewModel: HomeViewModel,onEditAvatarClick:()->Unit){
                     }
 
                     buttonWithoutRipple(
-                        onClick = { /*TODO*/ }
+                        onClick = { showJoinRoomCard.value=true }
                     ){
                         Text("Join Room",
                             style = MaterialTheme.typography.labelLarge)
@@ -206,6 +228,22 @@ private fun Content(viewModel: HomeViewModel,onEditAvatarClick:()->Unit){
 
         }
 
+    }
+
+    if(showJoinRoomCard.value){
+        JoinRoomCard(
+            roomId = uiState.enterdRoomId,
+            onTextChange = {
+                viewModel.onIntent(HomeIntent.RoomIdChanged(it))
+            },
+            onSubmit = {
+                viewModel.onIntent(HomeIntent.JoinRoomClicked)
+            },
+            onCancelClick = {
+                viewModel.onIntent(HomeIntent.CancelClicked)
+                showJoinRoomCard.value=false
+            }
+        )
     }
 }
 
@@ -315,3 +353,89 @@ private fun AvatarDrawerContent(onChoose:(Avatar)->Unit){
 
 
 }
+
+@Composable
+fun JoinRoomCard(
+    roomId:String,
+    onTextChange:(String)->Unit,
+    onSubmit:()->Unit,
+    onCancelClick: () -> Unit,
+){
+
+    Box( modifier = Modifier
+        .fillMaxSize()
+        .verticalScroll(rememberScrollState())
+        .background(Color.Black.copy(alpha = 0.5f))
+        .zIndex(1f)
+        .pointerInput(Unit) {detectTapGestures { onCancelClick() }},
+        contentAlignment = Alignment.Center){
+
+        Card(
+            modifier = Modifier
+                .width(300.dp)
+                .padding(16.dp)
+                .pointerInput(Unit) {
+                    detectTapGestures {}
+                },
+            colors = CardDefaults.cardColors(
+                containerColor = Color.White
+            )
+        ) {
+
+            Column(
+                modifier = Modifier.padding(16.dp)
+            ) {
+
+
+                EditTextField(
+                    value = roomId,
+                    onValueChange = {
+                        onTextChange(it)
+                    },
+                )
+
+                Spacer(Modifier.height(15.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+
+                ){
+
+                    buttonWithoutRipple(
+                        onClick = { onSubmit() }
+                    ){
+                        Text("Join Room",
+                            style = MaterialTheme.typography.labelLarge)
+                    }
+
+                    OutlinedButton(
+                        onClick = onCancelClick,
+                        border = BorderStroke(
+                            width = 1.dp,
+                            color = MaterialTheme.colorScheme.darkPrimaryBlue
+                        ),
+
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = MaterialTheme.colorScheme.darkPrimaryBlue
+                        ),
+                        contentPadding = PaddingValues(
+                            horizontal = 20.dp
+                        )
+                    ) {
+                        Text("Cancel",style = MaterialTheme.typography.labelLarge)
+                    }
+
+                }
+
+
+
+            }
+
+
+        }
+
+    }
+}
+

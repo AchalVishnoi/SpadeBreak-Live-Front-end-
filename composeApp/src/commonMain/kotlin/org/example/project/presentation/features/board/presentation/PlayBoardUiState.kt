@@ -9,13 +9,21 @@ import org.example.project.domain.models.Room
 import org.koin.core.definition.IndexKey
 
 data class PlayBoardUiState(
+    val isLoading:Boolean = false,
+    val reconnectToken:String = "",
     val handCard:List<Card> = emptyList(),
     val centerTable:Map<Seat,StaticCard> = emptyMap(),
     val flyingCards:List<MovingCard> = emptyList(),
     val tableCenter: Offset = IntOffset(700,270).toOffset(),
-    val playerSeats: Map<String, Seat> = emptyMap(),
-    val seatPositions: Map<Seat, Offset> = emptyMap(),
+    val playerSeats: Map<String,Seat> = emptyMap(),
+    val seatPositions: Map<Seat, Offset> = mapOf(
+        Seat.RIGHT to Offset.Zero,
+        Seat.LEFT to Offset.Zero,
+        Seat.TOP to Offset.Zero,
+        Seat.BOTTOM to Offset.Zero
+    ),
     val localPlayerId:String = "",
+
     val room: Room? = null
 )
 

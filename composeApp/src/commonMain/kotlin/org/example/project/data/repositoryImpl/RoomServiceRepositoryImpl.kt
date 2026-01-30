@@ -33,4 +33,16 @@ class RoomServiceRepositoryImpl(private val api:ApiEngine):RoomServiceRepository
             api.getRoom(roomId)
         }
     }
+
+    override suspend fun reconnectRoom(reconnectId: String): Result<JoinRoomResponse, DataError> {
+        return safeApiCall {
+            api.reconnectRoom(reconnectId)
+        }
+    }
+
+    override suspend fun leaveRoom(reconnectId: String): Result<Unit, DataError> {
+        return safeApiCall {
+            api.leaveRoom(reconnectId)
+        }
+    }
 }

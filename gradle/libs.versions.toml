@@ -32,6 +32,8 @@ navigation3Ui = "1.0.0-alpha05"
 
 multiplatformSettings = "1.1.1"
 
+lottieCompose = "6.4.1"
+
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
 kotlin-testJunit = { module = "org.jetbrains.kotlin:kotlin-test-junit", version.ref = "kotlin" }
@@ -84,6 +86,9 @@ navigation3-ui = { module = "org.jetbrains.androidx.navigation3:navigation3-ui",
 multiplatform-settings = { module = "com.russhwolf:multiplatform-settings", version.ref = "multiplatformSettings" }
 multiplatform-settings-no-arg = { module = "com.russhwolf:multiplatform-settings-no-arg", version.ref = "multiplatformSettings" }
 
+
+#lottie
+lottie-compose-v610 = { module = "com.airbnb.android:lottie-compose", version.ref = "lottieCompose" }
 
 
 [plugins]

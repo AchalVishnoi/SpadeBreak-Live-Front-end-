@@ -35,6 +35,7 @@ kotlin {
             implementation(libs.koin.androidx.compose)
 
             implementation(libs.ktor.client.okhttp)
+            implementation(libs.lottie.compose.v610)
 
         }
         commonMain.dependencies {

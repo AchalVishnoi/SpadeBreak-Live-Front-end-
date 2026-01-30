@@ -6,15 +6,15 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class Room(
 
-    val id:String,
-    val name:String,
-    val status: Status,
-    val players:List<Player>,
+    val id:String="",
+    val name:String="",
+    val status: Status=Status.OPEN,
+    val players:List<Player> = emptyList(),
     val game: Game?=null
 )
 
 
-
+@Serializable
 enum class Status{
     OPEN,
     READY,

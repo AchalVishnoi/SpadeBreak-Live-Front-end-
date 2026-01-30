@@ -33,7 +33,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import org.example.project.components.Avatar
-import org.example.project.presentation.SoundPlayer
+import org.example.project.data.local.PrefrenceManager
+import org.example.project.presentation.utils.SoundPlayer
 import org.example.project.domain.models.Player
 import org.example.project.presentation.ui.component.GlassCard
 import org.example.project.presentation.ui.theme.darkPrimaryBlue
@@ -44,13 +45,19 @@ import spadebreaklive.composeapp.generated.resources.blue_wooden_background
 import spadebreaklive.composeapp.generated.resources.like
 
 @Composable
-fun WaitingRoomScreen(waitingRoomViewModel: WaitingRoomViewModel,playerId:String,roomId:String,navigateToPlayRoom: (String,String)->Unit) {
+fun WaitingRoomScreen(waitingRoomViewModel: WaitingRoomViewModel,reconnectToken:String,onBack:()->Unit,navigateToPlayRoom: (String)->Unit) {
 
     println("navigated to waiting room")
     val soundPlayer: SoundPlayer =getKoin().get()
+    val prefrenceManager=getKoin().get<PrefrenceManager>()
+
+    val arr = reconnectToken.split(":")
+    val roomId=arr[0]
+    val playerId=arr[1]
+
 
     LaunchedEffect(Unit){
-        waitingRoomViewModel.onIntent(WaitingRoomIntent.Connect(roomId))
+        waitingRoomViewModel.onIntent(WaitingRoomIntent.Connect(reconnectToken))
     }
 
     val uiState=waitingRoomViewModel.uiState.collectAsState()
@@ -63,7 +70,13 @@ fun WaitingRoomScreen(waitingRoomViewModel: WaitingRoomViewModel,playerId:String
                     soundPlayer.playSound(it.uiSound)
                 }
                 is WaitingRoomEvents.NavigateToPlayRoom->{
-                      navigateToPlayRoom(roomId,playerId)
+                      navigateToPlayRoom(reconnectToken)
+                }
+
+                WaitingRoomEvents.NavigateBack ->{
+                    onBack()
+                    prefrenceManager.deleteToken()
+
                 }
             }
         }

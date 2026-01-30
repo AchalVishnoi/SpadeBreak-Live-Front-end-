@@ -6,6 +6,7 @@ import androidx.compose.animation.core.VectorConverter
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -19,6 +20,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -39,6 +41,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.unit.Dp
@@ -49,6 +52,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.example.project.components.Avatar
 import org.example.project.components.Card
+import org.example.project.domain.models.getPlayerById
 import org.example.project.presentation.features.board.getRotationForSeat
 import org.example.project.presentation.features.board.getTargetSlot
 import org.example.project.presentation.ui.component.GlassCard
@@ -60,124 +64,131 @@ import spadebreaklive.composeapp.generated.resources.blue_wooden_background
 import spadebreaklive.composeapp.generated.resources.cards_back
 
 @Composable
-fun PlayingBoardScreen(playerId:String="1", roomId:String="1234") {
+fun PlayingBoardScreen(reconnectionToken:String) {
+
+    val viewmodel  = koinViewModel<PlayViewmodel>()
+
+    val uiState by viewmodel.uiState.collectAsState()
+
+    LaunchedEffect(Unit){
+        viewmodel.onIntent(PlayBoardIntent.ReconnectRoom(reconnectionToken))
+    }
 
 
+    if(uiState.isLoading){
+        CircularProgressIndicator()
+    }
+    else{
+        key(uiState.room?.game?.round){
+            Content(reconnectionToken,viewmodel,uiState)
+        }
 
+    }
+
+}
+
+@Composable fun Content(reconnectionToken: String,viewmodel: PlayViewmodel,uiState: PlayBoardUiState){
     var centerPosition  by remember{ mutableStateOf(Offset.Zero) }
 
 
-      Box(
-       modifier = Modifier.fillMaxSize()
-      ) {
+    Box(
+        modifier = Modifier.fillMaxSize()
+    ) {
 
-       val viewmodel  = koinViewModel<PlayViewmodel>()
 
-       val uiState by viewmodel.uiState.collectAsState()
 
         Image(
-          painter = painterResource(Res.drawable.blue_wooden_background),
-          contentDescription = null,
-          contentScale = ContentScale.Crop,
-          modifier = Modifier.matchParentSize()
+            painter = painterResource(Res.drawable.blue_wooden_background),
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.matchParentSize()
         )
 
-          Box(
-              modifier = Modifier
-                  .size(90.dp)
-                  .align(Alignment.Center)
-                  .onGloballyPositioned {
-                      centerPosition = it.positionInRoot()
-                  }
-          )
+        Box(
+            modifier = Modifier
+                .size(90.dp)
+                .align(Alignment.Center)
+                .onGloballyPositioned {
+                    centerPosition = it.positionInRoot()
+                }
+        )
 
-          LaunchedEffect(centerPosition){
-              viewmodel.onIntent(PlayBoardIntent.UpdateTableCenter(centerPosition))
-          }
-
-
+        LaunchedEffect(centerPosition){
+            viewmodel.onIntent(PlayBoardIntent.UpdateTableCenter(centerPosition))
+        }
 
 
 
 
-         uiState.centerTable.forEach {
-              key(it.value.card.id){
-                  StaticCardOnTable(
-                      card = it.value.card,
-                      pos = getTargetSlot(
-                          centerPosition,
-                          it.key
-                      ),
-                      rotation = getRotationForSeat(
-                          it.key
-                      ),
-                      zIndex = it.value.zIndex
-                  )
-              }
-          }
-
-          uiState.flyingCards.forEach {
-              key(it.card.id){
-                  FlyingCard(
-                      movingCard = it,
-                      tableCenter = centerPosition
-                  ){
-                      viewmodel.onIntent(PlayBoardIntent.FinalyzeCard(it))
-                  }
-              }
-          }
 
 
-          MyHandCard(
-              cards = uiState.handCard,
-              modifier = Modifier
-          ){card,offset->
-              println("card ${card.id} played")
-              viewmodel.onIntent(
-                  PlayBoardIntent.CardPlayed(
-                      card = card,
-                      playerId = playerId,
-                      offset = offset
-                  )
-              )
-          }
+        uiState.centerTable.forEach {
+            key(it.value.card.id){
+                StaticCardOnTable(
+                    card = it.value.card,
+                    pos = getTargetSlot(
+                        centerPosition,
+                        it.key
+                    ),
+                    rotation = getRotationForSeat(
+                        it.key
+                    ),
+                    zIndex = it.value.zIndex
+                )
+            }
+        }
 
-          PlayerCardFan(
-              seat = Seat.LEFT
-          )
-          PlayerCardFan(
-              seat = Seat.RIGHT
-          )
-          PlayerCardFan(
-              seat = Seat.TOP
-          )
+        uiState.flyingCards.forEach {
+            key(it.card.id){
+                FlyingCard(
+                    movingCard = it,
+                    tableCenter = centerPosition
+                ){
+                    viewmodel.onIntent(PlayBoardIntent.FinalyzeCard(it))
+                }
+            }
+        }
+
+
+        MyHandCard(
+            cards = uiState.handCard,
+            modifier = Modifier
+        ){card,offset->
+            println("card ${card.id} played")
+            viewmodel.onIntent(
+                PlayBoardIntent.CardPlayed(
+                    card = card,
+                    playerId = "playerId",
+                    offset = offset
+                )
+            )
+        }
+
+        PlayerCardFan(
+            seat = Seat.LEFT
+        )
+        PlayerCardFan(
+            seat = Seat.RIGHT
+        )
+        PlayerCardFan(
+            seat = Seat.TOP
+        )
 
 
 
-          Player(
-              Avatar.AVATAR_01,
-              seat = Seat.TOP,
-              bet = 0,
-              score = 0,
-          )
-          Player(
-              Avatar.AVATAR_01,
-              seat = Seat.LEFT,
-              bet = 0,
-              score = 0,
-          )
-          Player(
-              Avatar.AVATAR_01,
-              seat = Seat.BOTTOM,
-              bet = 0,
-              score = 0,
-          )
-          Player(
-              Avatar.AVATAR_01,
-              seat = Seat.RIGHT,
-              bet = 0,
-              score = 0,
-          )
+
+
+        uiState.playerSeats.forEach {
+            key(it.value){
+                PlayerUi(
+                    playerId = it.key,
+                    uiState = uiState,
+                    updatePlayerOffset = { offset, seat ->
+                        viewmodel.onIntent(PlayBoardIntent.UpdateSeatPosition(seat, offset))
+                    }
+                )
+            }
+        }
 
 
 
@@ -188,8 +199,7 @@ fun PlayingBoardScreen(playerId:String="1", roomId:String="1234") {
 
 
 
-
-      }
+    }
 }
 
 
@@ -382,6 +392,8 @@ private fun PlayerCardFan(seat: Seat,cardCnt:Int=13){
         Seat.RIGHT -> Alignment.CenterEnd
     }
 
+
+
     Box(modifier = Modifier
         .rotate(rotation)
         .graphicsLayer {
@@ -445,23 +457,47 @@ private fun FanCard(total: Int,idx:Int,preRotation: Float){
 }
 
 @Composable
-private fun Player(avatar: Avatar,seat: Seat,bet: Int,score: Int,name:String="Player"){
+private fun PlayerUi(playerId:String,uiState: PlayBoardUiState,updatePlayerOffset:(Offset,Seat)->Unit){
 
+    val seat=uiState.playerSeats.get(playerId)
+
+    val player= uiState.room?.players?.getPlayerById(playerId)
+
+    var avatar = Avatar.entries[0]
+
+    player?.avatar?.let { avatar=Avatar.valueOf(it) }
 
     val alignment = when(seat){
         Seat.BOTTOM -> Alignment.BottomCenter
         Seat.LEFT -> Alignment.CenterStart
         Seat.TOP -> Alignment.TopCenter
         Seat.RIGHT -> Alignment.CenterEnd
+        null -> Alignment.Center
+    }
+
+    var bet=0
+    var score=0;
+
+    uiState.room?.game?.roundState?.score?.let {
+        bet=it[playerId]?.bet?:0
+        score=it[playerId]?.currPoints?:0
     }
 
     Box(modifier = Modifier.fillMaxSize(),
         contentAlignment = alignment){
 
+        Box(
+            modifier = Modifier.size(90.dp)
+                .align(alignment)
+                .onGloballyPositioned {
+                   updatePlayerOffset(it.positionInRoot(),seat?:Seat.TOP)
+                }
+        )
+
         when(seat){
             Seat.TOP,Seat.BOTTOM->{
                 Row {
-                    ScoreAndNameText(name)
+                    ScoreAndNameText(player?.nickname?:"player")
                     PlayerAvatar(avatar)
                     ScoreAndNameText("$score/$bet")
                 }
@@ -469,11 +505,12 @@ private fun Player(avatar: Avatar,seat: Seat,bet: Int,score: Int,name:String="Pl
             Seat.LEFT,Seat.RIGHT->{
                 Column(horizontalAlignment=Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center) {
-                    ScoreAndNameText(name)
+                    ScoreAndNameText(player?.nickname?:"player")
                     PlayerAvatar(avatar)
                     ScoreAndNameText("$score/$bet")
                 }
             }
+            null->{}
         }
 
     }

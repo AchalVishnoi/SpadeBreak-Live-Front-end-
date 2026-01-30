@@ -4,6 +4,8 @@
 
     <application
         android:name=".MyApp"
+        android:usesCleartextTraffic="true"
+        android:networkSecurityConfig="@xml/network_security_config"
         android:allowBackup="true"
         android:icon="@drawable/spades_logo"
         android:label="SpadeBreak"
@@ -14,6 +16,7 @@
         <activity
             android:exported="true"
             android:name=".MainActivity"
+            android:windowSoftInputMode="stateAlwaysHidden|adjustResize"
             android:screenOrientation="landscape">
             <meta-data
                 android:name="android:screenOrientation"

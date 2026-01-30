@@ -1,4 +1,4 @@
-package org.example.project.presentation
+package org.example.project.presentation.utils
 
 expect class SoundPlayer{
     fun playSound(sound: UiSound)

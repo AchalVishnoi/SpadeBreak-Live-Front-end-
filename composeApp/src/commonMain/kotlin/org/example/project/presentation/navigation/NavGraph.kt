@@ -12,6 +12,7 @@ import org.example.project.features.entry.presentation.HomeScreen
 import org.example.project.features.entry.presentation.HomeViewModel
 import org.example.project.data.remote.socket.SocketEngine
 import org.example.project.presentation.features.board.presentation.PlayingBoardScreen
+import org.example.project.presentation.features.splash.SplashScreen
 import org.example.project.presentation.features.waitingRoom.presentation.WaitingRoomScreen
 import org.koin.compose.getKoin
 import org.koin.compose.viewmodel.koinViewModel
@@ -26,7 +27,7 @@ fun NavGraph(){
 
     NavHost(
         navController = navController,
-        startDestination = NavRoutes.Home,
+        startDestination = NavRoutes.Splash,
 
         enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(300)) },
         exitTransition = { slideOutHorizontally(targetOffsetX = { -it }, animationSpec = tween(300)) },
@@ -36,13 +37,24 @@ fun NavGraph(){
 
         composable<NavRoutes.Splash> {
 
+            SplashScreen(
+                navigateToWaitingRoom = {
+                    navController.navigate(NavRoutes.WaitingRoom(it))
+                },
+                navigateToPlayRoom = {
+                    navController.navigate(NavRoutes.PlayRoom(it))
+                },
+                navigateToHome = {
+                    navController.navigate(NavRoutes.Home)
+                }
+            )
+
         }
 
         composable<NavRoutes.Home> {
             HomeScreen(viewModel = homeViewModel,
-                navigateToWaitingRoom = {roomId,playerId->
-                                        navController.popBackStack()
-                                        navController.navigate(NavRoutes.WaitingRoom(roomId,playerId))
+                navigateToWaitingRoom = {reconnectId->
+                                        navController.navigate(NavRoutes.WaitingRoom(reconnectId))
                                         },
                 socketEngine=socketEngine)
         }
@@ -51,18 +63,20 @@ fun NavGraph(){
             val room =it.toRoute<NavRoutes.WaitingRoom>()
             WaitingRoomScreen(
                 waitingRoomViewModel = koinViewModel(),
-                roomId = room.roomId,
-                playerId = room.playerId,
-                navigateToPlayRoom = {roomId,playerId->
+                onBack = {
                     navController.popBackStack()
-                    navController.navigate(NavRoutes.PlayRoom(roomId,playerId))
-                }
+                },
+                navigateToPlayRoom = { reconnectToken ->
+                    navController.popBackStack()
+                    navController.navigate(NavRoutes.PlayRoom(reconnectToken))
+                },
+                reconnectToken = room.reconnectId
             )
         }
 
         composable<NavRoutes.PlayRoom> {
             val room =it.toRoute<NavRoutes.PlayRoom>()
-            PlayingBoardScreen(room.roomId)
+            PlayingBoardScreen(room.reconnectId)
         }
 
 

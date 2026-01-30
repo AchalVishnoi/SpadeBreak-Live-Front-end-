@@ -12,8 +12,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
-import org.example.project.presentation.SoundPlayer
-import org.example.project.presentation.UiSound
+import org.example.project.presentation.utils.SoundPlayer
+import org.example.project.presentation.utils.UiSound
 import org.koin.compose.getKoin
 
 fun Modifier.bouncingClick(

@@ -39,8 +39,14 @@ class HomeViewModel(private val repo: RoomServiceRepository):ViewModel() {
             is HomeIntent.CreateRoomClicked->{
                 createRoom()
             }
-            is HomeIntent.JoinRoomClicked->{
-
+            is HomeIntent.JoinRoomClicked ->{
+                joinRoom()
+            }
+            is HomeIntent.RoomIdChanged->{
+                _uiState.value = _uiState.value.copy(enterdRoomId = intent.roomId)
+            }
+            is HomeIntent.CancelClicked->{
+                _uiState.value = _uiState.value.copy(enterdRoomId = "")
             }
             else -> {}
         }

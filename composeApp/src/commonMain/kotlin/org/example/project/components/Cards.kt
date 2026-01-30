@@ -87,4 +87,11 @@ enum class Card(
     SPADES_Q("queen_of_spades", Suit.SPADES, Rank.QUEEN, Res.drawable.queen_of_spades2),
     SPADES_K("king_of_spades", Suit.SPADES, Rank.KING, Res.drawable.king_of_spades2),
     SPADES_A("ace_of_spades", Suit.SPADES, Rank.ACE, Res.drawable.ace_of_spades);
+
+    companion object {
+        fun getCardById(id: String): Card {
+            return values().find { it.id == id } ?: throw IllegalArgumentException("Invalid card ID: $id")
+        }
+    }
 }
+
