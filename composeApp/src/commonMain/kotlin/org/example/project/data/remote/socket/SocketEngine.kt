@@ -94,20 +94,19 @@ class SocketEngine(private val client: HttpClient) {
     }
 
 
-    suspend fun send(message: GameMessage<*>,destination:String) {
-        val stompFrame = """
-        SEND
-        destination:$destination
-        content-type:application/json
+    suspend fun sendRaw(jsonBody: String, destination: String) {
+        val stompFrame =
+            "SEND\n" +
+                    "destination:$destination\n" +
+                    "content-type:application/json\n\n" +
+                    jsonBody +
+                    "\u0000"
 
-        ${json.encodeToString(message)}
-        \u0000
-    """.trimIndent()
+        println("sendRaw frame:\n$stompFrame")
 
         session?.send(Frame.Text(stompFrame))
-
-
     }
+
 
     suspend fun disconnect() {
         listenJob?.cancel()

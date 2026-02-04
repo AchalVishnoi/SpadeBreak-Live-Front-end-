@@ -16,9 +16,7 @@ import org.example.project.presentation.utils.SoundPlayer
 import org.example.project.presentation.utils.UiSound
 import org.koin.compose.getKoin
 
-fun Modifier.bouncingClick(
-    onClick: () -> Unit,
-    isEnable: Boolean = true):Modifier = composed{
+fun Modifier.bouncingClick(isEnable: Boolean = true, onClick: () -> Unit):Modifier = composed{
 
         var soundPlayer: SoundPlayer = getKoin().get()
 

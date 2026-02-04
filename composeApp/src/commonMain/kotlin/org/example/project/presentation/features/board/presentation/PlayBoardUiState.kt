@@ -24,7 +24,10 @@ data class PlayBoardUiState(
     ),
     val localPlayerId:String = "",
 
-    val room: Room? = null
+    val room: Room? = null,
+
+    val showScoreCard:Boolean = false,
+    val gameCompleted:Boolean = false
 )
 
 data class MovingCard(
@@ -32,8 +35,11 @@ data class MovingCard(
     val seat: Seat,
     val startPos:Offset,
     val endPos:Offset,
+    val currRotation:Float=0f,
+    val targetRotation:Float=0f,
     val isLocal:Boolean,
-    val zIndex:Float=1f
+    val zIndex:Float=1f,
+    val toCenter:Boolean=true
 )
 
 data class StaticCard(

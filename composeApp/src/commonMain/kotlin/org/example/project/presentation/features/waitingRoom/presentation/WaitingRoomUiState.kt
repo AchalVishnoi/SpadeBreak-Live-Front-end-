@@ -7,4 +7,5 @@ data class WaitingRoomUiState(
     val room:Room?=null,
     val playerId:String?=null,
     val isLoading:Boolean=false,
+    val isReadyLoading:Boolean = false
 )

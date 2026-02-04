@@ -45,4 +45,10 @@ class RoomServiceRepositoryImpl(private val api:ApiEngine):RoomServiceRepository
             api.leaveRoom(reconnectId)
         }
     }
+
+    override suspend fun isReady(playerId: String, roomId: String): Result<Room, DataError> {
+        return safeApiCall {
+            api.isReady(playerId, roomId)
+        }
+    }
 }

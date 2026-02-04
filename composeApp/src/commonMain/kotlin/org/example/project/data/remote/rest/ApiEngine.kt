@@ -91,6 +91,22 @@ class ApiEngine(private val client: HttpClient) {
     }
 
 
+    suspend fun isReady(playerId:String,roomId:String): Room {
+
+        val response=client.post(ApiRoutes.PLAYER_READY_API){
+            contentType(ContentType.Application.Json)
+            parameter(key="playerId", value = playerId)
+            parameter(key="roomId", value = roomId)
+        }
+        if(!response.status.isSuccess()) {
+            throw ClientRequestException(
+                response,
+                cachedResponseText = response.bodyAsText()
+            )
+        }
+        return response.body<Room>()
+    }
+
 
 
 

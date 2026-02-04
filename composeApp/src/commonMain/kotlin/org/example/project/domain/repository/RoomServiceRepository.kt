@@ -11,4 +11,5 @@ interface RoomServiceRepository {
     suspend fun getRoom(roomId:String): Result<Room, DataError>
     suspend fun reconnectRoom(reconnectId:String):Result<JoinRoomResponse, DataError>
     suspend fun leaveRoom(reconnectId: String):Result<Unit,DataError>
+    suspend fun isReady(playerId:String,roomId: String):Result<Room,DataError>
 }

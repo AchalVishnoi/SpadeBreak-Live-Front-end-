@@ -19,6 +19,15 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CameraOutdoor
+import androidx.compose.material.icons.filled.ThumbUp
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -30,18 +39,26 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
+import androidx.lifecycle.viewmodel.compose.viewModel
 import org.example.project.components.Avatar
 import org.example.project.data.local.PrefrenceManager
 import org.example.project.presentation.utils.SoundPlayer
 import org.example.project.domain.models.Player
+import org.example.project.domain.models.getPlayerById
+import org.example.project.presentation.ui.component.FullScreenBlurredBackgroundLoader
 import org.example.project.presentation.ui.component.GlassCard
+import org.example.project.presentation.ui.effects.bouncingClick
 import org.example.project.presentation.ui.theme.darkPrimaryBlue
+import org.example.project.presentation.ui.theme.lightPrimaryBlue
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.getKoin
 import spadebreaklive.composeapp.generated.resources.Res
 import spadebreaklive.composeapp.generated.resources.blue_wooden_background
+import spadebreaklive.composeapp.generated.resources.exit
 import spadebreaklive.composeapp.generated.resources.like
 
 @Composable
@@ -74,9 +91,8 @@ fun WaitingRoomScreen(waitingRoomViewModel: WaitingRoomViewModel,reconnectToken:
                 }
 
                 WaitingRoomEvents.NavigateBack ->{
-                    onBack()
                     prefrenceManager.deleteToken()
-
+                    onBack()
                 }
             }
         }
@@ -94,6 +110,42 @@ fun WaitingRoomScreen(waitingRoomViewModel: WaitingRoomViewModel,reconnectToken:
             modifier = Modifier.matchParentSize()
         )
 
+        IconButton(
+            onClick = { waitingRoomViewModel.onIntent(WaitingRoomIntent.LeaveRoom(reconnectToken)) },
+            modifier = Modifier
+                .padding(20.dp)
+                .clip(CircleShape)
+                .background(color = MaterialTheme.colorScheme.error.copy(0.6f), shape = CircleShape)
+                .align(Alignment.TopStart)
+        ){
+            Icon(
+                painter = painterResource(Res.drawable.exit),
+                contentDescription = null,
+                tint = Color.White
+            )
+        }
+
+
+        uiState.value.room?.players?.getPlayerById(uiState.value.playerId?:"1")?.let {
+
+            println("is ready button block called")
+            if(!it.ready){
+                println("is ready button block called")
+                IsReadyButton(
+                    alignment = Alignment.BottomEnd,
+                    uiState = uiState.value,
+                    onClick = {
+                        waitingRoomViewModel.onIntent(WaitingRoomIntent.Ready)
+                    }
+                )
+            }
+        }
+
+
+
+
+
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -102,16 +154,17 @@ fun WaitingRoomScreen(waitingRoomViewModel: WaitingRoomViewModel,reconnectToken:
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
+
             ShowRoomId(roomId)
-            uiState.value.room?.let {
-                ShowPlayerList(it.players)
+            uiState.value.room?.players?.let {
+                ShowPlayerList(it)
             }
-
-
 
         }
 
-
+        if(uiState.value.isLoading){
+            FullScreenBlurredBackgroundLoader()
+        }
 
 
     }
@@ -167,7 +220,7 @@ private fun ShowRoomId(roomId: String){
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center
 
-        ) {
+        ){
             Text(
                 text = "Room Id: $roomId",
                 style = MaterialTheme.typography.headlineSmall,
@@ -242,4 +295,55 @@ private fun PlayerCard(player: Player, modifier: Modifier, size: Dp = 100.dp) {
             }
         }
     }
+}
+
+@Composable
+private fun IsReadyButton(alignment: Alignment=Alignment.BottomEnd,uiState: WaitingRoomUiState,onClick:()->Unit){
+Box(modifier = Modifier.fillMaxSize().zIndex(1f), contentAlignment = alignment){
+
+    if(uiState.isReadyLoading){
+        CircularProgressIndicator(
+            modifier = Modifier
+                .align(alignment)
+                .padding(50.dp)
+                .size(50.dp),
+            color = MaterialTheme.colorScheme.darkPrimaryBlue,
+            strokeWidth = 5.dp
+
+        )
+    }
+    else{
+        Card(
+            modifier = Modifier
+                .align(alignment)
+                .padding(50.dp)
+                .size(50.dp)
+                .bouncingClick{
+                    onClick()
+                },
+            shape = CircleShape,
+
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.darkPrimaryBlue
+            ),
+            elevation = CardDefaults.cardElevation(
+                defaultElevation = 10.dp
+            )
+        ){
+
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ){
+                Icon(
+                    imageVector = Icons.Default.ThumbUp,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.lightPrimaryBlue
+                )
+            }
+
+        }
+    }
+
+}
 }

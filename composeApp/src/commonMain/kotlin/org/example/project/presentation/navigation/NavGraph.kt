@@ -39,12 +39,16 @@ fun NavGraph(){
 
             SplashScreen(
                 navigateToWaitingRoom = {
+                    navController.popBackStack()
                     navController.navigate(NavRoutes.WaitingRoom(it))
                 },
                 navigateToPlayRoom = {
+                    navController.popBackStack()
+                    navController.navigate(NavRoutes.WaitingRoom(it))
                     navController.navigate(NavRoutes.PlayRoom(it))
                 },
                 navigateToHome = {
+                    navController.popBackStack()
                     navController.navigate(NavRoutes.Home)
                 }
             )
@@ -64,10 +68,14 @@ fun NavGraph(){
             WaitingRoomScreen(
                 waitingRoomViewModel = koinViewModel(),
                 onBack = {
-                    navController.popBackStack()
+                    if(navController.previousBackStackEntry!=null){
+                        navController.popBackStack()
+                    }else{
+                        navController.popBackStack()
+                        navController.navigate(NavRoutes.Home)
+                    }
                 },
                 navigateToPlayRoom = { reconnectToken ->
-                    navController.popBackStack()
                     navController.navigate(NavRoutes.PlayRoom(reconnectToken))
                 },
                 reconnectToken = room.reconnectId
@@ -76,7 +84,16 @@ fun NavGraph(){
 
         composable<NavRoutes.PlayRoom> {
             val room =it.toRoute<NavRoutes.PlayRoom>()
-            PlayingBoardScreen(room.reconnectId)
+            PlayingBoardScreen(
+                room.reconnectId,
+                navigateBack ={
+                    navController.popBackStack()
+                },
+                navigateToHomeScreen = {
+                    navController.popBackStack()
+                    navController.navigate(NavRoutes.Home)
+                }
+            )
         }
 
 

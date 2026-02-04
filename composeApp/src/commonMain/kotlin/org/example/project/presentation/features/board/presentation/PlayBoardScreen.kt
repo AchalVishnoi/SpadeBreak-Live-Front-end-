@@ -1,26 +1,49 @@
 package org.example.project.presentation.features.board.presentation
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.MutableTransitionState
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.VectorConverter
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Score
+import androidx.compose.material.icons.filled.Scoreboard
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -38,14 +61,17 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import kotlinx.coroutines.delay
@@ -53,18 +79,26 @@ import kotlinx.coroutines.launch
 import org.example.project.components.Avatar
 import org.example.project.components.Card
 import org.example.project.domain.models.getPlayerById
+import org.example.project.presentation.features.board.GlowingCircularBackground
+import org.example.project.presentation.features.board.HelperFunctions
 import org.example.project.presentation.features.board.getRotationForSeat
 import org.example.project.presentation.features.board.getTargetSlot
+import org.example.project.presentation.ui.component.FullScreenLoader
 import org.example.project.presentation.ui.component.GlassCard
 import org.example.project.presentation.ui.theme.darkPrimaryBlue
+import org.example.project.presentation.ui.theme.extraDarkPrimaryBlue
+import org.example.project.presentation.ui.theme.lightPrimaryBlue
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.viewmodel.koinViewModel
 import spadebreaklive.composeapp.generated.resources.Res
 import spadebreaklive.composeapp.generated.resources.blue_wooden_background
 import spadebreaklive.composeapp.generated.resources.cards_back
+import spadebreaklive.composeapp.generated.resources.exit
+import spadebreaklive.composeapp.generated.resources.like
+import spadebreaklive.composeapp.generated.resources.score_card_icon
 
 @Composable
-fun PlayingBoardScreen(reconnectionToken:String) {
+fun PlayingBoardScreen(reconnectionToken:String,navigateBack:(reconnectToken:String)->Unit,navigateToHomeScreen:()->Unit) {
 
     val viewmodel  = koinViewModel<PlayViewmodel>()
 
@@ -74,14 +108,50 @@ fun PlayingBoardScreen(reconnectionToken:String) {
         viewmodel.onIntent(PlayBoardIntent.ReconnectRoom(reconnectionToken))
     }
 
-
-    if(uiState.isLoading){
-        CircularProgressIndicator()
-    }
-    else{
-        key(uiState.room?.game?.round){
-            Content(reconnectionToken,viewmodel,uiState)
+    LaunchedEffect(Unit){
+        viewmodel.events.collect{
+            when(it){
+                is PlayBoardEvents.CardPlayed -> {}
+                PlayBoardEvents.NavigateBack -> {navigateBack(reconnectionToken)}
+                PlayBoardEvents.ShowScoreCard -> {}
+                is PlayBoardEvents.ShowToast -> {}
+                is PlayBoardEvents.TrickWinner -> {}
+            }
         }
+    }
+
+    Box(
+        modifier = Modifier.fillMaxSize()
+    ) {
+
+
+        Image(
+            painter = painterResource(Res.drawable.blue_wooden_background),
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.matchParentSize()
+        )
+
+        if (uiState.isLoading) {
+            FullScreenLoader()
+        } else {
+            if(uiState.showScoreCard){
+                ScoreBoard(
+                    uiState = uiState,
+                    modifier = Modifier
+                ){
+                    viewmodel.onIntent(PlayBoardIntent.HideScoreCard)
+                    if(uiState.gameCompleted){
+                        navigateBack(reconnectionToken)
+                    }
+                }
+            }
+            key(uiState.room?.game?.round) {
+                Content(reconnectionToken, viewmodel, uiState)
+            }
+
+        }
+
 
     }
 
@@ -91,18 +161,8 @@ fun PlayingBoardScreen(reconnectionToken:String) {
     var centerPosition  by remember{ mutableStateOf(Offset.Zero) }
 
 
-    Box(
-        modifier = Modifier.fillMaxSize()
-    ) {
+    Box(modifier = Modifier.fillMaxSize()){
 
-
-
-        Image(
-            painter = painterResource(Res.drawable.blue_wooden_background),
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.matchParentSize()
-        )
 
         Box(
             modifier = Modifier
@@ -113,45 +173,71 @@ fun PlayingBoardScreen(reconnectionToken:String) {
                 }
         )
 
+
+
         LaunchedEffect(centerPosition){
             viewmodel.onIntent(PlayBoardIntent.UpdateTableCenter(centerPosition))
         }
 
 
 
+        ShowScoreCardButton(
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .padding(10.dp)
+        ){
+            viewmodel.onIntent(PlayBoardIntent.ShowScoreCard)
+        }
+
+        LeaveRoomButton(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(10.dp)
+        ){
+
+        }
 
 
 
-        uiState.centerTable.forEach {
-            key(it.value.card.id){
-                StaticCardOnTable(
-                    card = it.value.card,
-                    pos = getTargetSlot(
-                        centerPosition,
-                        it.key
-                    ),
-                    rotation = getRotationForSeat(
-                        it.key
-                    ),
-                    zIndex = it.value.zIndex
-                )
+
+
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .zIndex(1f)
+        ) {
+            uiState.centerTable.forEach {
+                key(it.value.card.id) {
+                    StaticCardOnTable(
+                        card = it.value.card,
+                        pos = getTargetSlot(centerPosition, it.key),
+                        rotation = getRotationForSeat(it.key),
+                        zIndex = 1f
+                    )
+                }
             }
         }
 
-        uiState.flyingCards.forEach {
-            key(it.card.id){
-                FlyingCard(
-                    movingCard = it,
-                    tableCenter = centerPosition
-                ){
-                    viewmodel.onIntent(PlayBoardIntent.FinalyzeCard(it))
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .zIndex(10f)
+        ) {
+            uiState.flyingCards.forEach {
+                key(it.card.id) {
+                    FlyingCard(
+                        movingCard = it,
+                        tableCenter = centerPosition
+                    ) {
+                        viewmodel.onIntent(PlayBoardIntent.FinalyzeCard(it))
+                    }
                 }
             }
         }
 
 
         MyHandCard(
-            cards = uiState.handCard,
+            uiState = uiState,
             modifier = Modifier
         ){card,offset->
             println("card ${card.id} played")
@@ -191,21 +277,19 @@ fun PlayingBoardScreen(reconnectionToken:String) {
         }
 
 
-
-
-
-
-
-
-
-
     }
+
+
+
+
+
+
 }
 
 
 @Composable
 private fun MyHandCard(
-    cards:List<Card>,
+    uiState: PlayBoardUiState,
     modifier: Modifier = Modifier,
     onCardPlayed: (card: Card,offset: Offset) -> Unit
 ){
@@ -213,13 +297,17 @@ private fun MyHandCard(
         contentAlignment = Alignment.BottomCenter
     ){
 
-        cards.forEachIndexed { index, card ->
+        uiState.handCard.forEachIndexed { index, card ->
             key(card.id) {
                 AnimatedHandCard(
                     card = card,
                     index = index,
-                    total = cards.size,
+                    total = uiState.handCard.size,
                     modifier = modifier,
+                    canPlay = HelperFunctions.canPlay(
+                        card,
+                        uiState
+                    ),
                     onCardPlayed = {card,offset->
                         onCardPlayed(card,offset)
                     }
@@ -237,80 +325,89 @@ private fun MyHandCard(
 @Composable
 private fun AnimatedHandCard(
     card: Card,
-    index:Int,
-    total:Int,
+    index: Int,
+    total: Int,
     modifier: Modifier = Modifier,
-    canPlay:Boolean=true,
-    onCardPlayed: (card: Card,offset: Offset) -> Unit
-){
+    canPlay: Boolean = true,
+    onCardPlayed: (card: Card, offset: Offset) -> Unit
+) {
     var cardPositionInRoot by remember { mutableStateOf(Offset.Zero) }
+    var cardSize by remember { mutableStateOf(IntSize.Zero) }
 
     val scope = rememberCoroutineScope()
 
-    val offsetY= remember { Animatable( 80f) }
-
-
+    val offsetY = remember { Animatable(40f) }
     val offsetX = remember { Animatable(0f) }
-    val scale= remember { Animatable(1f) }
+    val scale = remember { Animatable(1f) }
     val rotation = remember { Animatable(0f) }
 
-
-    val targetX=(index-total/2)*90f
-    val targetRotation=(index-total/2)*5f
+    val targetX = (index - total / 2f) * 90f
+    val targetRotation = (index - total / 2f) * 5f
 
     LaunchedEffect(Unit) {
         delay(index * 100L)
         scope.launch { offsetX.animateTo(targetX, tween(600)) }
-          scope.launch { rotation.animateTo(targetRotation, tween(600)) }
+        scope.launch { rotation.animateTo(targetRotation, tween(600)) }
     }
 
+    val painter = painterResource(card.image)
+    val aspectRatio =
+        painter.intrinsicSize.width / painter.intrinsicSize.height
 
-
-
-    Image(
-        painter = painterResource(card.image),
-        contentDescription = null,
-        modifier = Modifier
-            .size(100.dp)
-            .onGloballyPositioned {
-                cardPositionInRoot = it.positionInRoot()
-            }
-            .graphicsLayer{
+    Box(
+        modifier = modifier
+            .graphicsLayer {
                 translationX = offsetX.value
                 translationY = offsetY.value
                 rotationZ = rotation.value
             }
-            .pointerInput(Unit){
+            .onGloballyPositioned {
+                cardPositionInRoot = it.positionInRoot()
+                cardSize = it.size
+            }
+            .pointerInput(canPlay) {
+                if (!canPlay) return@pointerInput
+
                 detectVerticalDragGestures(
                     onDragEnd = {
-                        if(offsetY.value<-10f){
-                            val startPos= cardPositionInRoot+Offset(offsetX.value,offsetY.value)
+                        if (offsetY.value < -10f) {
+                            val startPos = cardPositionInRoot + Offset(offsetX.value, offsetY.value)
                             onCardPlayed(card, startPos)
-                        }
-                        else{
+                        } else {
                             scope.launch {
                                 offsetY.animateTo(80f, tween(300))
-                                scale.snapTo(1f)
                                 rotation.snapTo(targetRotation)
                             }
                         }
                     },
-                    onVerticalDrag = { _,dragAmount ->
-                        if(canPlay){
-                            scope.launch {
-                                offsetY.snapTo(offsetY.value + dragAmount)
-                                scale.snapTo(1.2f)
-                                rotation.snapTo(0f)
-                            }
+                    onVerticalDrag = { _, dragAmount ->
+                        scope.launch {
+                            offsetY.snapTo(offsetY.value + dragAmount)
+                            rotation.snapTo(0f)
                         }
-
                     }
                 )
-
             }
-    )
+    ) {
+        Image(
+            painter = painter,
+            contentDescription = null,
+            modifier = Modifier
+                .height(100.dp)
+                .aspectRatio(aspectRatio)
+        )
+
+        if (!canPlay) {
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .background(Color.Black.copy(alpha = 0.45f))
+            )
+        }
+    }
 
 }
+
 
 @Composable
 private fun StaticCardOnTable(
@@ -345,19 +442,17 @@ private fun StaticCardOnTable(
 private fun FlyingCard(movingCard: MovingCard
                        ,tableCenter:Offset
                        ,onFinish:()->Unit){
-    val targetPos =
-        getTargetSlot(tableCenter, movingCard.seat)
-    val targetRotation =
-        getRotationForSeat(movingCard.seat)
+
+    val targetRotation = movingCard.targetRotation
 
     val animeOffset = remember { Animatable(movingCard.startPos, Offset.VectorConverter) }
 
-    val rotation = remember { Animatable(targetRotation) }
+    val rotation = remember { Animatable(movingCard.currRotation) }
     val scale = remember { Animatable(if (movingCard.isLocal) 1.2f else 0.7f) }
 
-        LaunchedEffect(targetPos){
+        LaunchedEffect(movingCard.endPos){
             launch{
-                animeOffset.animateTo(targetPos, tween(500, easing = FastOutSlowInEasing))
+                animeOffset.animateTo(movingCard.endPos, tween(500, easing = FastOutSlowInEasing))
                 onFinish()
             }
             launch{ rotation.animateTo(targetRotation, tween(500)) }
@@ -366,20 +461,37 @@ private fun FlyingCard(movingCard: MovingCard
 
 
 
+    val visibleState = remember {
+        MutableTransitionState(false).apply {
+            targetState = true
+        }
+    }
 
-    Image(
-        painter = painterResource(movingCard.card.image),
-        contentDescription = null,
-        modifier = Modifier
-            .size(90.dp)
-            .offset { IntOffset(animeOffset.value.x.toInt(), animeOffset.value.y.toInt()) }
-            .zIndex(movingCard.zIndex)
-            .graphicsLayer {
-                rotationZ = rotation.value
-                scaleX = scale.value
-                scaleY = scale.value
-            }
-    )
+    AnimatedVisibility(
+        visibleState = visibleState,
+        enter = fadeIn(animationSpec = tween(0)),
+        exit = fadeOut(
+            animationSpec = tween(
+                durationMillis = 0
+            )
+        )
+    ) {
+        Image(
+            painter = painterResource(movingCard.card.image),
+            contentDescription = null,
+            modifier = Modifier
+                .size(90.dp)
+                .offset { IntOffset(animeOffset.value.x.toInt(), animeOffset.value.y.toInt()) }
+                .zIndex(movingCard.zIndex)
+                .graphicsLayer {
+                    rotationZ = rotation.value
+                    scaleX = scale.value
+                    scaleY = scale.value
+                }
+        )
+    }
+
+
 }
 
 @Composable
@@ -498,7 +610,7 @@ private fun PlayerUi(playerId:String,uiState: PlayBoardUiState,updatePlayerOffse
             Seat.TOP,Seat.BOTTOM->{
                 Row {
                     ScoreAndNameText(player?.nickname?:"player")
-                    PlayerAvatar(avatar)
+                    PlayerAvatar(avatar,isActiveTurn = uiState.room?.game?.roundState?.playerTurn==playerId)
                     ScoreAndNameText("$score/$bet")
                 }
             }
@@ -506,7 +618,7 @@ private fun PlayerUi(playerId:String,uiState: PlayBoardUiState,updatePlayerOffse
                 Column(horizontalAlignment=Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center) {
                     ScoreAndNameText(player?.nickname?:"player")
-                    PlayerAvatar(avatar)
+                    PlayerAvatar(avatar, isActiveTurn = uiState.room?.game?.roundState?.playerTurn==playerId)
                     ScoreAndNameText("$score/$bet")
                 }
             }
@@ -525,21 +637,34 @@ private fun PlayerUi(playerId:String,uiState: PlayBoardUiState,updatePlayerOffse
 }
 
 @Composable
-private fun PlayerAvatar(avatar: Avatar,size: Dp = 50.dp){
+private fun PlayerAvatar(avatar: Avatar,size: Dp = 50.dp,isActiveTurn:Boolean=false){
     Box(
-        modifier = Modifier
-            .clip(CircleShape)
-            .size(size)
-            .background(MaterialTheme.colorScheme.darkPrimaryBlue)
-            .padding(5.dp)
+        contentAlignment = Alignment.Center
     ) {
-        Image(
-            painter = painterResource(
-                avatar.image
-            ),
-            contentDescription = null,
-            contentScale = ContentScale.Crop
-        )
+
+        if (isActiveTurn) {
+            GlowingCircularBackground(
+                modifier = Modifier
+                    .size(size + 15.dp)
+                    .clip(CircleShape)
+            )
+        }
+
+
+        Box(
+            modifier = Modifier
+                .size(size)
+                .clip(CircleShape)
+                .background(if(!isActiveTurn)MaterialTheme.colorScheme.darkPrimaryBlue else Color.Transparent)
+                .padding(4.dp)
+        ) {
+            Image(
+                painter = painterResource(avatar.image),
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize().clip(CircleShape)
+            )
+        }
     }
 }
 
@@ -563,154 +688,287 @@ private fun ScoreAndNameText(text:String){
     }
 }
 
-/*
 @Composable
-private fun HandCards(
- cards: List<Card>,
- modifier: Modifier = Modifier,
- onCardPlayed: (PlayedCard) -> Unit,
- player:Player
-){
+private fun ShowScoreCardButton(modifier: Modifier,onClick:()->Unit){
 
-  Box(modifier=Modifier.fillMaxSize(),
-   contentAlignment = Alignment.BottomCenter
-  ){
+    Card(
+        modifier = modifier.wrapContentSize(),
+        shape = RoundedCornerShape(50),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.darkPrimaryBlue
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 5.dp
+        ),
+    ){
+        IconButton(
+            onClick = onClick,
+            modifier = Modifier
+        ){
+            Icon(
+                painter = painterResource(Res.drawable.score_card_icon),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.lightPrimaryBlue,
+                modifier = Modifier.padding(5.dp)
+            )
+        }
+    }
 
+}
 
-    cards.forEachIndexed { index, card ->
-     key(card.id) {
-      AnimatedCard(
-       index = index,
-       total = cards.size,
-       cardRes = card.image,
-       onCardPlayed = {
-        onCardPlayed(
-         PlayedCard(
-          player = player,
-          card = card
-         )
+@Composable
+private fun LeaveRoomButton(modifier: Modifier,onClick:()->Unit){
+
+    Card(
+        modifier = modifier.wrapContentSize(),
+        shape = RoundedCornerShape(50),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.darkPrimaryBlue
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 5.dp
+        ),
+    ){
+        IconButton(
+            onClick = onClick,
+            modifier = Modifier
+        ){
+            Icon(
+                painter = painterResource(Res.drawable.exit),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.lightPrimaryBlue,
+                modifier = Modifier.padding(5.dp)
+            )
+        }
+    }
+
+}
+
+@Composable
+private fun ScoreBoard(uiState: PlayBoardUiState,modifier: Modifier,onDismiss:()->Unit){
+
+    val score = uiState.room?.game?.score
+    val players = uiState.room?.players?:emptyList()
+
+    val rounds=5
+
+    var total by remember { mutableStateOf<Map<String, Double>>(emptyMap()) }
+
+    LaunchedEffect(score, players) {
+        val result = mutableMapOf<String, Double>()
+
+        players.forEach { player ->
+            var sum = 0.0
+            score?.forEach { round ->
+                val roundScore = round[player.id]
+                sum += HelperFunctions.calculateFinalScore(roundScore)?:0.0
+            }
+            result[player.id] = sum
+        }
+
+        total = result
+    }
+
+    Box( modifier = Modifier
+        .fillMaxSize()
+        .verticalScroll(rememberScrollState())
+        .background(Color.Black.copy(alpha = 0.5f))
+        .zIndex(10f)
+        .pointerInput(Unit) {detectTapGestures { onDismiss() }},
+        contentAlignment = Alignment.Center){
+
+        DismissButton(
+            modifier = Modifier
+                .padding(40.dp)
+                .align(Alignment.TopEnd),
+            onClick = onDismiss
         )
-       }
-      )
-     }
-
-   }
 
 
 
-  }
+        Card(
+            modifier = Modifier
+                .padding( horizontal = 70.dp)
+                .wrapContentSize()
+                .padding(vertical = 10.dp, horizontal = 20.dp),
+            shape = RoundedCornerShape(30.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.extraDarkPrimaryBlue
+            )
+        ){
+
+            Column {
+                Row(modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 10.dp),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ){
+
+                    Text(
+                        text = "SCORE BOARD",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.lightPrimaryBlue
+                    )
+
+                }
+
+                Row(modifier = Modifier.fillMaxWidth()) {
+                    TableCell("Round", true)
+                    players.forEach {
+                        TableCell(it.nickname, true)
+                    }
+                }
+                DottedDivider()
+
+                for(roundNumber in 1..rounds){
+
+                    Row(modifier = Modifier.fillMaxWidth()) {
+                        TableCell("R${(roundNumber)}")
+
+                        if(roundNumber-1>=score?.size?:0){
+                            players.forEach {
+                                ScoreCell(null)
+                            }
+                        }
+                        else{
+                            val map= score?.get(roundNumber-1)
+                            players.forEach { player ->
+
+                                val calculated = HelperFunctions.calculateFinalScore(map?.get(player.id))
+                                ScoreCell(calculated)
+
+                            }
+                        }
 
 
+                    }
+                    DottedDivider()
+
+                }
+
+
+                DottedDivider(color = MaterialTheme.colorScheme.lightPrimaryBlue.copy(0.7f))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                ) {
+                    TableCell("TOTAL", true)
+
+                    players.forEach {
+                        TableCell(total[it.id]?.toString() ?: "0", true)
+                    }
+                }
+
+            }
+
+        }
+
+    }
 
 }
-
-@Composable
-fun AnimatedCard(index: Int,
-                 total: Int,
-                 cardRes: DrawableResource
-                 ,onCardPlayed:()->Unit={}
-                 ,canPlay:Boolean=true) {
- val scope = rememberCoroutineScope()
-
- val offsetY= remember { Animatable(if(canPlay) 60f else 80f) }
-
-
- val offsetX = remember { Animatable(0f) }
- val rotation = remember { Animatable(0f) }
-
-
- val targetX = (index - total / 2) * 90f
- val targetRotation = (index - total / 2) * 5f
-
-
-
- LaunchedEffect(Unit) {
-  delay(index * 100L)
-  scope.launch { offsetX.animateTo(targetX, tween(600)) }
-  scope.launch { rotation.animateTo(targetRotation, tween(600)) }
- }
-
- Image(
-  painter = painterResource(cardRes),
-  contentDescription = null,
-  modifier = Modifier
-   .size(100.dp)
-   .graphicsLayer {
-    translationX = offsetX.value
-    translationY = offsetY.value
-    rotationZ = rotation.value
-
-   }
-   .pointerInput(Unit){
-    detectVerticalDragGestures(
-     onDragEnd = {
-      if(offsetY.value<-10f){
-       onCardPlayed()
-       scope.launch {
-        offsetX.animateTo(0f, tween(600))
-       }
-       scope.launch {
-        offsetY.animateTo(-190f, tween(600))
-       }
-      }
-      else{
-       scope.launch {
-        offsetY.animateTo(if(canPlay) 60f else 80f, tween(300))
-        rotation.snapTo(targetRotation)
-       }
-      }
-     },
-     onVerticalDrag = { _,dragAmount ->
-      if(canPlay){
-       scope.launch {
-        offsetY.snapTo(offsetY.value + dragAmount)
-        rotation.snapTo(0f)
-       }
-      }
-
-     }
-    )
-
-   }
- )
-}
-
-
-
 
 
 
 
 @Composable
-fun CenterPlayedCards(modifier: Modifier=Modifier.size(200.dp),centerCards: List<PlayedCard>) {
- Box(
-  modifier = modifier,
- ) {
+fun RowScope.TableCell(text: String, isHeader: Boolean = false) {
+    Box(
+        modifier = Modifier
+            .weight(1f)
+            .padding(3.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = text,
+            style = if(isHeader) MaterialTheme.typography.titleMedium else MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.lightPrimaryBlue
+        )
+    }
+}
 
-  centerCards.forEach {
+@Composable
+fun RowScope.ScoreCell(score: Double?) {
+    Box(
+        modifier = Modifier
+            .weight(1f)
+            .padding(3.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        if (score!=null&&score < 0) {
+            Box(
+                modifier = Modifier
+                    .padding(3.dp)
+                    .border(
+                        width = 1.dp,
+                        color = Color.Red,
+                        shape = CircleShape
+                    )
+                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = score.toString(),
+                    color = Color.White,
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+        } else {
+            Text(
+                text = score?.toString() ?: "",
+                color = Color.White,
+                style = MaterialTheme.typography.bodySmall
+            )
+        }
+    }
+}
 
-   val (alignment, rotation ) = when (it.player.seat) {
-    1 -> Alignment.BottomCenter to 0f
-    2 -> Alignment.CenterEnd to -90f
-    3 -> Alignment.TopCenter to 180f
-    4 -> Alignment.CenterStart to 90f
-    else -> Alignment.Center to 0f
-   }
+@Composable
+fun DottedDivider(
+    modifier: Modifier = Modifier,
+    color: Color = MaterialTheme.colorScheme.lightPrimaryBlue.copy(0.5f)
+) {
+    Canvas(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(1.dp)
+    ) {
+        val dashWidth = 10f
+        val dashGap = 6f
+        val strokeWidth = 2f
 
-   Image(
-    painter = painterResource(it.card.image),
-    contentDescription = null,
-    modifier = Modifier
-     .size(100.dp)
-     .align(alignment)
-     .graphicsLayer { rotationZ = rotation }
-   )
+        drawLine(
+            color = color,
+            start = Offset(0f, 0f),
+            end = Offset(size.width, 0f),
+            strokeWidth = strokeWidth,
+            pathEffect = PathEffect.dashPathEffect(
+                floatArrayOf(dashWidth, dashGap)
+            )
+        )
+    }
+}
 
+@Composable
+private fun DismissButton(modifier: Modifier,onClick:()->Unit){
 
+    Card(
+        modifier = modifier.wrapContentSize(),
+        shape = RoundedCornerShape(50),
+        colors = CardDefaults.cardColors(
+            containerColor = Color.Transparent
+        )
+    ){
+        IconButton(
+            onClick = onClick,
+            modifier = Modifier
+        ){
+            Text(
+                text = "X",
+                style = MaterialTheme.typography.displaySmall,
+                color = MaterialTheme.colorScheme.lightPrimaryBlue
+            )
+        }
+    }
 
-  }
-
- }
-
-}*/
-
+}

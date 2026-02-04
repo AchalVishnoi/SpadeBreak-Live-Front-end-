@@ -1,14 +1,17 @@
 package org.example.project.features.entry.presentation
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -17,6 +20,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -51,10 +55,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.input.KeyboardType
@@ -65,18 +72,26 @@ import kotlinx.coroutines.launch
 import org.example.project.components.Avatar
 import org.example.project.data.local.PrefrenceManager
 import org.example.project.data.remote.socket.SocketEngine
+import org.example.project.domain.models.dummyPlayers
+import org.example.project.domain.models.dummyScore
+import org.example.project.presentation.features.board.HelperFunctions
+import org.example.project.presentation.features.board.presentation.PlayBoardUiState
+import org.example.project.presentation.features.board.presentation.ScoreCell
 import org.example.project.presentation.features.home.presentation.HomeEvents
 import org.example.project.presentation.features.home.presentation.HomeIntent
+import org.example.project.presentation.ui.component.FullScreenBlurredBackgroundLoader
 import org.example.project.presentation.ui.component.GlassCard
 import org.example.project.presentation.ui.component.buttonWithoutRipple
 import org.example.project.presentation.ui.effects.bouncingClick
 import org.example.project.presentation.ui.theme.darkPrimaryBlue
+import org.example.project.presentation.ui.theme.extraDarkPrimaryBlue
 import org.example.project.presentation.ui.theme.lightPrimaryBlue
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.getKoin
 import org.koin.compose.viewmodel.koinViewModel
 import spadebreaklive.composeapp.generated.resources.Res
 import spadebreaklive.composeapp.generated.resources.blue_wooden_background
+import spadebreaklive.composeapp.generated.resources.exit
 
 @Composable
 fun HomeScreen(viewModel: HomeViewModel,
@@ -87,6 +102,7 @@ fun HomeScreen(viewModel: HomeViewModel,
     val scope = rememberCoroutineScope()
     val viewmodel = koinViewModel<HomeViewModel>()
     val preferenceManager: PrefrenceManager = getKoin().get()
+    val uiState=viewmodel.uiState.collectAsState()
 
     LaunchedEffect(Unit){
 
@@ -144,6 +160,10 @@ fun HomeScreen(viewModel: HomeViewModel,
 
         }
 
+    }
+
+    if(uiState.value.isLoading){
+        FullScreenBlurredBackgroundLoader()
     }
 
 
@@ -245,6 +265,7 @@ private fun Content(viewModel: HomeViewModel,onEditAvatarClick:()->Unit){
             }
         )
     }
+
 }
 
 //0xFF0c5983
@@ -392,6 +413,7 @@ fun JoinRoomCard(
                     onValueChange = {
                         onTextChange(it)
                     },
+                    placeholder = "Room Id"
                 )
 
                 Spacer(Modifier.height(15.dp))
@@ -439,3 +461,232 @@ fun JoinRoomCard(
     }
 }
 
+
+
+@Composable
+private fun ScoreBoard(onDismiss:()->Unit={}){
+
+    val score = dummyScore
+    val players = dummyPlayers
+    val rounds=5
+
+    var total by remember { mutableStateOf<Map<String, Double>>(emptyMap()) }
+
+    LaunchedEffect(score, players) {
+        val result = mutableMapOf<String, Double>()
+
+        players.forEach { player ->
+            var sum = 0.0
+            score.forEach { round ->
+                val roundScore = round[player.id]
+                sum += HelperFunctions.calculateFinalScore(roundScore)?:0.0
+            }
+            result[player.id] = sum
+        }
+
+        total = result
+    }
+
+    Box( modifier = Modifier
+        .fillMaxSize()
+        .verticalScroll(rememberScrollState())
+        .background(Color.Black.copy(alpha = 0.5f))
+        .zIndex(10f)
+        .pointerInput(Unit) {detectTapGestures { onDismiss() }},
+        contentAlignment = Alignment.Center){
+
+        DismissButton(
+            modifier = Modifier
+                .padding(40.dp)
+                .align(Alignment.TopEnd),
+            onClick = onDismiss
+        )
+
+
+
+        Card(
+            modifier = Modifier
+                .padding( horizontal = 70.dp)
+                .wrapContentSize()
+                .padding(vertical = 10.dp, horizontal = 20.dp),
+            shape = RoundedCornerShape(30.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.extraDarkPrimaryBlue
+            )
+        ){
+
+            Column {
+                Row(modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 10.dp),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ){
+
+                    Text(
+                        text = "SCORE BOARD",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.lightPrimaryBlue
+                    )
+
+                }
+
+                Row(modifier = Modifier.fillMaxWidth()) {
+                    TableCell("Round", true)
+                    players.forEach {
+                        TableCell(it.nickname, true)
+                    }
+                }
+                DottedDivider()
+
+                for(roundNumber in 1..rounds){
+
+                        Row(modifier = Modifier.fillMaxWidth()) {
+                            TableCell("R${(roundNumber)}")
+
+                            if(roundNumber-1>=score.size){
+                                players.forEach {
+                                    ScoreCell(null)
+                                }
+                            }
+                            else{
+                                val map= score[roundNumber-1]
+                                players.forEach { player ->
+
+                                    val calculated = HelperFunctions.calculateFinalScore(map[player.id])
+                                    ScoreCell(calculated)
+
+                                }
+                            }
+
+
+                        }
+                        DottedDivider()
+
+                }
+
+
+                DottedDivider(color = MaterialTheme.colorScheme.lightPrimaryBlue.copy(0.7f))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                ) {
+                    TableCell("TOTAL", true)
+
+                    players.forEach {
+                        TableCell(total[it.id]?.toString() ?: "0", true)
+                    }
+                }
+
+            }
+
+        }
+
+    }
+
+}
+
+
+
+
+@Composable
+fun RowScope.TableCell(text: String, isHeader: Boolean = false) {
+    Box(
+        modifier = Modifier
+            .weight(1f)
+            .padding(3.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = text,
+            style = if(isHeader) MaterialTheme.typography.titleMedium else MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.lightPrimaryBlue
+        )
+    }
+}
+
+@Composable
+fun RowScope.ScoreCell(score: Double?) {
+    Box(
+        modifier = Modifier
+            .weight(1f)
+            .padding(3.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        if (score!=null&&score < 0) {
+            Box(
+                modifier = Modifier
+                    .padding(3.dp)
+                    .border(
+                        width = 1.dp,
+                        color = Color.Red,
+                        shape = CircleShape
+                    )
+                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = score.toString(),
+                    color = Color.White,
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+        } else {
+            Text(
+                text = score?.toString() ?: "",
+                color = Color.White,
+                style = MaterialTheme.typography.bodySmall
+            )
+        }
+    }
+}
+
+@Composable
+fun DottedDivider(
+    modifier: Modifier = Modifier,
+    color: Color = MaterialTheme.colorScheme.lightPrimaryBlue.copy(0.5f)
+) {
+    Canvas(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(1.dp)
+    ) {
+        val dashWidth = 10f
+        val dashGap = 6f
+        val strokeWidth = 2f
+
+        drawLine(
+            color = color,
+            start = Offset(0f, 0f),
+            end = Offset(size.width, 0f),
+            strokeWidth = strokeWidth,
+            pathEffect = PathEffect.dashPathEffect(
+                floatArrayOf(dashWidth, dashGap)
+            )
+        )
+    }
+}
+
+@Composable
+private fun DismissButton(modifier: Modifier,onClick:()->Unit){
+
+    Card(
+        modifier = modifier.wrapContentSize(),
+        shape = RoundedCornerShape(50),
+        colors = CardDefaults.cardColors(
+            containerColor = Color.Transparent
+        )
+    ){
+        IconButton(
+            onClick = onClick,
+            modifier = Modifier
+        ){
+            Text(
+                text = "X",
+                style = MaterialTheme.typography.displaySmall,
+                color = MaterialTheme.colorScheme.lightPrimaryBlue
+            )
+        }
+    }
+
+}

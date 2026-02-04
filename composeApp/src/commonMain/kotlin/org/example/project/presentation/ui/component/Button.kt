@@ -24,6 +24,7 @@ fun buttonWithoutRipple(
     containerColor:Color=MaterialTheme.colorScheme.darkPrimaryBlue,
     contentColor:Color=Color.White,
     cornerRadius: Dp=18.dp,
+    shape: RoundedCornerShape=RoundedCornerShape(cornerRadius),
     horizontalContentPadding:Dp=20.dp,
     verticalContentPadding:Dp=8.dp,
     content: @Composable () -> Unit

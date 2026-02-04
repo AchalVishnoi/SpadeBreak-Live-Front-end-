@@ -1,5 +1,7 @@
 package org.example.project.presentation.features.board
 
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import org.example.project.presentation.features.board.presentation.Seat
 
@@ -21,4 +23,9 @@ fun getTargetSlot(center: Offset, seat: Seat): Offset {
         Seat.RIGHT -> center.copy(x = center.x + cardOffset)
     }
 }
+
+@Composable
+expect fun GlowingCircularBackground(
+    modifier: Modifier
+)
 

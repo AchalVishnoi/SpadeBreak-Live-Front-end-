@@ -2,6 +2,7 @@ package org.example.project.presentation.features.waitingRoom.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import io.ktor.util.date.getTimeMillis
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,7 +17,9 @@ import org.example.project.domain.result.onSuccess
 import org.example.project.domain.models.MessageType
 import org.example.project.domain.models.Room
 import org.example.project.data.remote.socket.SocketEngine.Companion.json
+import org.example.project.domain.models.GameMessage
 import org.example.project.domain.models.Status
+import org.example.project.domain.models.getPlayerById
 import org.example.project.domain.repository.GameSocketRepository
 import org.example.project.domain.repository.RoomServiceRepository
 
@@ -46,7 +49,13 @@ class WaitingRoomViewModel(private val gameSocketRepository: GameSocketRepositor
 
                 }
             }
-            is WaitingRoomIntent.Ready   -> {}
+            is WaitingRoomIntent.Ready   -> {
+                println("ready button clicked")
+                sendReadyMessage()
+            }
+            is WaitingRoomIntent.LeaveRoom -> {
+                leaveRoom(intent.reconnectId)
+            }
         }
     }
 
@@ -64,8 +73,9 @@ class WaitingRoomViewModel(private val gameSocketRepository: GameSocketRepositor
                      }
                     MessageType.PLAYER_LEFT->{
                         val room = json.decodeFromJsonElement<Room>(it.playLoad!!)
+                        val name=_uiState.value.room?.players?.getPlayerById(it.playerId?:"1")
                         _uiState.value=_uiState.value.copy(room = room)
-                        _events.emit(WaitingRoomEvents.ShowToast("${room.players.last().nickname} left!"))
+                        _events.emit(WaitingRoomEvents.ShowToast("${name?.nickname} left!"))
                     }
                     MessageType.PLAYER_IS_READY->{
                         val room = json.decodeFromJsonElement<Room>(it.playLoad!!)
@@ -118,7 +128,8 @@ class WaitingRoomViewModel(private val gameSocketRepository: GameSocketRepositor
             val result = roomServiceRepository.reconnectRoom(reconnectToken)
             result.onSuccess {
                 println(it)
-                _uiState.value = _uiState.value.copy(room = it.room)
+                _uiState.value = _uiState.value.copy(room = it.room, playerId = it.playerId)
+
                 if(_uiState.value.room?.status == Status.IN_GAME){
                     _events.emit(WaitingRoomEvents.NavigateToPlayRoom)
                 }
@@ -137,6 +148,70 @@ class WaitingRoomViewModel(private val gameSocketRepository: GameSocketRepositor
                 _events.emit(WaitingRoomEvents.NavigateBack)
             }
             _uiState.value=_uiState.value.copy(isLoading = false)
+        }
+    }
+    private fun leaveRoom(reconnectToken:String){
+        viewModelScope.launch {
+            _uiState.value=_uiState.value.copy(isLoading = true)
+            val result = roomServiceRepository.leaveRoom(reconnectToken)
+            result.onSuccess {
+                _events.emit(WaitingRoomEvents.NavigateBack)
+            }.onError{
+                when(it){
+                    is DataError.Remote.ServerMessage ->{ _events.emit(WaitingRoomEvents.ShowToast(it.message?:"field to process request, try again!!"))}
+                    DataError.Remote.NOT_FOUND -> _events.emit(WaitingRoomEvents.ShowToast("room not found"))
+                    DataError.Remote.SERVER_ERROR -> _events.emit(WaitingRoomEvents.ShowToast("server error, try again later"))
+                    DataError.Remote.NO_INTERNET -> _events.emit(WaitingRoomEvents.ShowToast("Check your internet connection"))
+                    DataError.Remote.TIMEOUT_ERROR -> _events.emit(WaitingRoomEvents.ShowToast("Request timed out"))
+                    DataError.Remote.UNKNOWN -> _events.emit(WaitingRoomEvents.ShowToast("Something went wrong"))
+                    DataError.Remote.REDIRECT_ERROR -> _events.emit(WaitingRoomEvents.ShowToast("Unexpected redirect"))
+                    else -> _events.emit(WaitingRoomEvents.ShowToast("Pata nahi kya ghatna ghati"))
+                }
+            }
+            _uiState.value=_uiState.value.copy(isLoading = false)
+        }
+    }
+    
+    private fun sendReadyMessage(){
+        viewModelScope.launch {
+            _uiState.value=_uiState.value.copy(isReadyLoading = true)
+            println("playerId: ${_uiState.value.playerId}, roomId: ${_uiState.value.room?.id}")
+            _uiState.value.playerId?.let{playerId->
+
+
+                _uiState.value.room?.id?.let {
+                    println("ready message sent by viewmodel")
+
+                   // gameSocketRepository.sendReady(playerId,it)
+                    val result = roomServiceRepository.isReady(
+                        playerId = playerId,
+                        roomId = it
+                    )
+                    result.onSuccess {room->
+                        println(room)
+                        _uiState.value = _uiState.value.copy(room = room)
+
+
+                    }.onError {
+
+                        when(it){
+                            is DataError.Remote.ServerMessage ->{ _events.emit(WaitingRoomEvents.ShowToast(it.message?:"field to process request, try again!!"))}
+                            DataError.Remote.NOT_FOUND -> _events.emit(WaitingRoomEvents.ShowToast("room not found"))
+                            DataError.Remote.SERVER_ERROR -> _events.emit(WaitingRoomEvents.ShowToast("server error, try again later"))
+                            DataError.Remote.NO_INTERNET -> _events.emit(WaitingRoomEvents.ShowToast("Check your internet connection"))
+                            DataError.Remote.TIMEOUT_ERROR -> _events.emit(WaitingRoomEvents.ShowToast("Request timed out"))
+                            DataError.Remote.UNKNOWN -> _events.emit(WaitingRoomEvents.ShowToast("Something went wrong"))
+                            DataError.Remote.REDIRECT_ERROR -> _events.emit(WaitingRoomEvents.ShowToast("Unexpected redirect"))
+                            else -> _events.emit(WaitingRoomEvents.ShowToast("Pata nahi kya ghatna ghati"))
+                        }
+
+                    }
+                }
+                
+            }
+
+            
+            _uiState.value=_uiState.value.copy(isReadyLoading = false)
         }
     }
 
