@@ -53,7 +53,7 @@ fun FullScreenBlurredBackgroundLoader(
     Box( modifier = Modifier
         .fillMaxSize()
         .background(backgroundColor)
-        .zIndex(1f)
+        .zIndex(1000f)
         .pointerInput(Unit) {detectTapGestures { }},
         contentAlignment = Alignment.Center){
 

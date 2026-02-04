@@ -7,6 +7,7 @@ val darkPrimaryBlue = Color(0xFF0c5983)
 val extraDarkPrimaryBlue = Color(0xFF0a4566)
 val lightPrimaryBlue=Color(0xFFdaebf5)
 val lightRedColor = Color(0XFFeb5b4b)
+val greenColor = Color(0XFF1cd10f)
 
 
 
@@ -26,3 +27,6 @@ val ColorScheme.extraDarkPrimaryBlue:Color
 
 val ColorScheme.lightRedColor:Color
     get() = org.example.project.presentation.ui.theme.lightRedColor
+
+val ColorScheme.greenColor:Color
+    get() = org.example.project.presentation.ui.theme.greenColor

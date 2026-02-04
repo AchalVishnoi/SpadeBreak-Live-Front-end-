@@ -97,6 +97,14 @@ class PlayViewmodel(private val roomServiceRepository: RoomServiceRepository,pri
                     }
                 }
 
+                is PlayBoardIntent.PlayBid->{
+                    playBid(intent.bid)
+                }
+
+                is PlayBoardIntent.LeaveRoom->{
+                    leaveRoom(intent.reconnectToken)
+                }
+
                 else ->{}
 
             }
@@ -423,12 +431,22 @@ class PlayViewmodel(private val roomServiceRepository: RoomServiceRepository,pri
 
     }
 
+    private fun playBid(bid:Int){
+        viewModelScope.launch {
+            gameSocketRepository.placeBet(
+                playerId = _uiState.value.localPlayerId,
+                roomId = _uiState.value.room?.id ?: "",
+                bet = bid
+            )
+        }
+    }
+
     private fun leaveRoom(reconnectToken:String){
         viewModelScope.launch {
             _uiState.value=_uiState.value.copy(isLoading = true)
             val result = roomServiceRepository.leaveRoom(reconnectToken)
             result.onSuccess {
-                _events.emit(PlayBoardEvents.NavigateBack)
+                _events.emit(PlayBoardEvents.NavigateHome)
             }.onError{
                 when(it){
                     is DataError.Remote.ServerMessage ->{ _events.emit(PlayBoardEvents.ShowToast(it.message?:"field to process request, try again!!"))}

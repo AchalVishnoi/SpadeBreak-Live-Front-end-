@@ -15,6 +15,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import org.example.project.presentation.ui.effects.bouncingClick
 import org.example.project.presentation.ui.theme.darkPrimaryBlue
+import org.example.project.presentation.ui.theme.lightPrimaryBlue
+import org.example.project.presentation.ui.theme.lightRedColor
 
 @Composable
 fun buttonWithoutRipple(
@@ -31,25 +33,23 @@ fun buttonWithoutRipple(
 ){
 
     Card(
+        colors = CardDefaults.cardColors(
+            containerColor = if(enabled) containerColor else Color(0XFF57a1c9),
+            contentColor = contentColor
+        ),
         modifier = Modifier
             .bouncingClick(
                 onClick = onClick,
                 isEnable = enabled
             )
-            .clip(RoundedCornerShape(cornerRadius))
             .background(
-                color = containerColor,
-                shape = RoundedCornerShape(cornerRadius)
-            )
+                if(enabled) containerColor else Color(0XFF57a1c9),
+                shape = shape)
+            .clip(RoundedCornerShape(cornerRadius))
             .padding(
                 horizontal = horizontalContentPadding,
                 vertical = verticalContentPadding
-            )
-            ,
-        colors = CardDefaults.cardColors(
-            containerColor = containerColor,
-            contentColor = contentColor
-        )
+            ),
 
     ) {
 

@@ -8,6 +8,7 @@ sealed class PlayBoardEvents {
     data class ShowToast(val message: String) : PlayBoardEvents()
     data object ShowScoreCard:PlayBoardEvents()
     data object NavigateBack:PlayBoardEvents()
+    data object NavigateHome:PlayBoardEvents()
     data class TrickWinner(val player: Player,val seat: Seat):PlayBoardEvents()
 }
 

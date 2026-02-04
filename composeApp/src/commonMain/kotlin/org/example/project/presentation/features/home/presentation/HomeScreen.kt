@@ -9,6 +9,7 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
@@ -79,12 +80,14 @@ import org.example.project.presentation.features.board.presentation.PlayBoardUiS
 import org.example.project.presentation.features.board.presentation.ScoreCell
 import org.example.project.presentation.features.home.presentation.HomeEvents
 import org.example.project.presentation.features.home.presentation.HomeIntent
+import org.example.project.presentation.features.home.presentation.InputValidator
 import org.example.project.presentation.ui.component.FullScreenBlurredBackgroundLoader
 import org.example.project.presentation.ui.component.GlassCard
 import org.example.project.presentation.ui.component.buttonWithoutRipple
 import org.example.project.presentation.ui.effects.bouncingClick
 import org.example.project.presentation.ui.theme.darkPrimaryBlue
 import org.example.project.presentation.ui.theme.extraDarkPrimaryBlue
+import org.example.project.presentation.ui.theme.greenColor
 import org.example.project.presentation.ui.theme.lightPrimaryBlue
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.getKoin
@@ -92,6 +95,8 @@ import org.koin.compose.viewmodel.koinViewModel
 import spadebreaklive.composeapp.generated.resources.Res
 import spadebreaklive.composeapp.generated.resources.blue_wooden_background
 import spadebreaklive.composeapp.generated.resources.exit
+import spadebreaklive.composeapp.generated.resources.score_card_icon
+import spadebreaklive.composeapp.generated.resources.tick_icon
 
 @Composable
 fun HomeScreen(viewModel: HomeViewModel,
@@ -219,7 +224,10 @@ private fun Content(viewModel: HomeViewModel,onEditAvatarClick:()->Unit){
 
                 EditTextField(
                     value = uiState.nickName,
-                    onValueChange = { viewModel.onIntent(HomeIntent.NickNameChanged(it)) },
+                    onValueChange = { input ->
+                        val filtered = input.filter { !it.isWhitespace() }
+                        viewModel.onIntent(HomeIntent.NickNameChanged(filtered))
+                    },
                 )
 
                 Spacer(Modifier.height(15.dp))
@@ -230,6 +238,7 @@ private fun Content(viewModel: HomeViewModel,onEditAvatarClick:()->Unit){
                 ){
 
                     buttonWithoutRipple(
+                        enabled = InputValidator.isValidIdOrName(uiState.nickName),
                         onClick = { viewModel.onIntent(HomeIntent.CreateRoomClicked) }
                     ){
                         Text("Create Room",
@@ -237,6 +246,7 @@ private fun Content(viewModel: HomeViewModel,onEditAvatarClick:()->Unit){
                     }
 
                     buttonWithoutRipple(
+                        enabled = InputValidator.isValidIdOrName(uiState.nickName),
                         onClick = { showJoinRoomCard.value=true }
                     ){
                         Text("Join Room",
@@ -265,6 +275,7 @@ private fun Content(viewModel: HomeViewModel,onEditAvatarClick:()->Unit){
             }
         )
     }
+
 
 }
 
@@ -338,7 +349,7 @@ private fun AvatarDrawerContent(onChoose:(Avatar)->Unit){
     Column(
         modifier = Modifier
             .fillMaxHeight()
-            .width(280.dp)
+            .width(300.dp)
             .background(color = MaterialTheme.colorScheme.lightPrimaryBlue)
             .padding(16.dp)
     ) {
@@ -410,8 +421,10 @@ fun JoinRoomCard(
 
                 EditTextField(
                     value = roomId,
-                    onValueChange = {
-                        onTextChange(it)
+                    onValueChange = { input ->
+                        val filtered = input.filter { !it.isWhitespace() }
+                        onTextChange(filtered)
+
                     },
                     placeholder = "Room Id"
                 )
@@ -426,7 +439,8 @@ fun JoinRoomCard(
                 ){
 
                     buttonWithoutRipple(
-                        onClick = { onSubmit() }
+                        onClick = { onSubmit() },
+                        enabled = InputValidator.isValidIdOrName(roomId)
                     ){
                         Text("Join Room",
                             style = MaterialTheme.typography.labelLarge)
@@ -459,234 +473,4 @@ fun JoinRoomCard(
         }
 
     }
-}
-
-
-
-@Composable
-private fun ScoreBoard(onDismiss:()->Unit={}){
-
-    val score = dummyScore
-    val players = dummyPlayers
-    val rounds=5
-
-    var total by remember { mutableStateOf<Map<String, Double>>(emptyMap()) }
-
-    LaunchedEffect(score, players) {
-        val result = mutableMapOf<String, Double>()
-
-        players.forEach { player ->
-            var sum = 0.0
-            score.forEach { round ->
-                val roundScore = round[player.id]
-                sum += HelperFunctions.calculateFinalScore(roundScore)?:0.0
-            }
-            result[player.id] = sum
-        }
-
-        total = result
-    }
-
-    Box( modifier = Modifier
-        .fillMaxSize()
-        .verticalScroll(rememberScrollState())
-        .background(Color.Black.copy(alpha = 0.5f))
-        .zIndex(10f)
-        .pointerInput(Unit) {detectTapGestures { onDismiss() }},
-        contentAlignment = Alignment.Center){
-
-        DismissButton(
-            modifier = Modifier
-                .padding(40.dp)
-                .align(Alignment.TopEnd),
-            onClick = onDismiss
-        )
-
-
-
-        Card(
-            modifier = Modifier
-                .padding( horizontal = 70.dp)
-                .wrapContentSize()
-                .padding(vertical = 10.dp, horizontal = 20.dp),
-            shape = RoundedCornerShape(30.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.extraDarkPrimaryBlue
-            )
-        ){
-
-            Column {
-                Row(modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 10.dp),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically
-                ){
-
-                    Text(
-                        text = "SCORE BOARD",
-                        style = MaterialTheme.typography.titleLarge,
-                        color = MaterialTheme.colorScheme.lightPrimaryBlue
-                    )
-
-                }
-
-                Row(modifier = Modifier.fillMaxWidth()) {
-                    TableCell("Round", true)
-                    players.forEach {
-                        TableCell(it.nickname, true)
-                    }
-                }
-                DottedDivider()
-
-                for(roundNumber in 1..rounds){
-
-                        Row(modifier = Modifier.fillMaxWidth()) {
-                            TableCell("R${(roundNumber)}")
-
-                            if(roundNumber-1>=score.size){
-                                players.forEach {
-                                    ScoreCell(null)
-                                }
-                            }
-                            else{
-                                val map= score[roundNumber-1]
-                                players.forEach { player ->
-
-                                    val calculated = HelperFunctions.calculateFinalScore(map[player.id])
-                                    ScoreCell(calculated)
-
-                                }
-                            }
-
-
-                        }
-                        DottedDivider()
-
-                }
-
-
-                DottedDivider(color = MaterialTheme.colorScheme.lightPrimaryBlue.copy(0.7f))
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                ) {
-                    TableCell("TOTAL", true)
-
-                    players.forEach {
-                        TableCell(total[it.id]?.toString() ?: "0", true)
-                    }
-                }
-
-            }
-
-        }
-
-    }
-
-}
-
-
-
-
-@Composable
-fun RowScope.TableCell(text: String, isHeader: Boolean = false) {
-    Box(
-        modifier = Modifier
-            .weight(1f)
-            .padding(3.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = text,
-            style = if(isHeader) MaterialTheme.typography.titleMedium else MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.lightPrimaryBlue
-        )
-    }
-}
-
-@Composable
-fun RowScope.ScoreCell(score: Double?) {
-    Box(
-        modifier = Modifier
-            .weight(1f)
-            .padding(3.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        if (score!=null&&score < 0) {
-            Box(
-                modifier = Modifier
-                    .padding(3.dp)
-                    .border(
-                        width = 1.dp,
-                        color = Color.Red,
-                        shape = CircleShape
-                    )
-                    .padding(horizontal = 8.dp, vertical = 4.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = score.toString(),
-                    color = Color.White,
-                    style = MaterialTheme.typography.bodySmall
-                )
-            }
-        } else {
-            Text(
-                text = score?.toString() ?: "",
-                color = Color.White,
-                style = MaterialTheme.typography.bodySmall
-            )
-        }
-    }
-}
-
-@Composable
-fun DottedDivider(
-    modifier: Modifier = Modifier,
-    color: Color = MaterialTheme.colorScheme.lightPrimaryBlue.copy(0.5f)
-) {
-    Canvas(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(1.dp)
-    ) {
-        val dashWidth = 10f
-        val dashGap = 6f
-        val strokeWidth = 2f
-
-        drawLine(
-            color = color,
-            start = Offset(0f, 0f),
-            end = Offset(size.width, 0f),
-            strokeWidth = strokeWidth,
-            pathEffect = PathEffect.dashPathEffect(
-                floatArrayOf(dashWidth, dashGap)
-            )
-        )
-    }
-}
-
-@Composable
-private fun DismissButton(modifier: Modifier,onClick:()->Unit){
-
-    Card(
-        modifier = modifier.wrapContentSize(),
-        shape = RoundedCornerShape(50),
-        colors = CardDefaults.cardColors(
-            containerColor = Color.Transparent
-        )
-    ){
-        IconButton(
-            onClick = onClick,
-            modifier = Modifier
-        ){
-            Text(
-                text = "X",
-                style = MaterialTheme.typography.displaySmall,
-                color = MaterialTheme.colorScheme.lightPrimaryBlue
-            )
-        }
-    }
-
 }

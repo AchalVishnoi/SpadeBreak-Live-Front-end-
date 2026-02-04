@@ -12,6 +12,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -22,6 +23,7 @@ import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.aspectRatio
@@ -31,6 +33,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -78,17 +81,23 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.example.project.components.Avatar
 import org.example.project.components.Card
+import org.example.project.data.local.PrefrenceManager
+import org.example.project.domain.models.RoundStatus
 import org.example.project.domain.models.getPlayerById
 import org.example.project.presentation.features.board.GlowingCircularBackground
 import org.example.project.presentation.features.board.HelperFunctions
 import org.example.project.presentation.features.board.getRotationForSeat
 import org.example.project.presentation.features.board.getTargetSlot
+import org.example.project.presentation.ui.component.FullScreenBlurredBackgroundLoader
 import org.example.project.presentation.ui.component.FullScreenLoader
 import org.example.project.presentation.ui.component.GlassCard
+import org.example.project.presentation.ui.effects.bouncingClick
 import org.example.project.presentation.ui.theme.darkPrimaryBlue
 import org.example.project.presentation.ui.theme.extraDarkPrimaryBlue
+import org.example.project.presentation.ui.theme.greenColor
 import org.example.project.presentation.ui.theme.lightPrimaryBlue
 import org.jetbrains.compose.resources.painterResource
+import org.koin.compose.getKoin
 import org.koin.compose.viewmodel.koinViewModel
 import spadebreaklive.composeapp.generated.resources.Res
 import spadebreaklive.composeapp.generated.resources.blue_wooden_background
@@ -96,6 +105,7 @@ import spadebreaklive.composeapp.generated.resources.cards_back
 import spadebreaklive.composeapp.generated.resources.exit
 import spadebreaklive.composeapp.generated.resources.like
 import spadebreaklive.composeapp.generated.resources.score_card_icon
+import spadebreaklive.composeapp.generated.resources.tick_icon
 
 @Composable
 fun PlayingBoardScreen(reconnectionToken:String,navigateBack:(reconnectToken:String)->Unit,navigateToHomeScreen:()->Unit) {
@@ -108,6 +118,7 @@ fun PlayingBoardScreen(reconnectionToken:String,navigateBack:(reconnectToken:Str
         viewmodel.onIntent(PlayBoardIntent.ReconnectRoom(reconnectionToken))
     }
 
+    val prefrenceManager:PrefrenceManager = getKoin().get()
     LaunchedEffect(Unit){
         viewmodel.events.collect{
             when(it){
@@ -116,6 +127,10 @@ fun PlayingBoardScreen(reconnectionToken:String,navigateBack:(reconnectToken:Str
                 PlayBoardEvents.ShowScoreCard -> {}
                 is PlayBoardEvents.ShowToast -> {}
                 is PlayBoardEvents.TrickWinner -> {}
+                PlayBoardEvents.NavigateHome -> {
+                    prefrenceManager.deleteToken()
+                    navigateToHomeScreen()
+                }
             }
         }
     }
@@ -133,8 +148,16 @@ fun PlayingBoardScreen(reconnectionToken:String,navigateBack:(reconnectToken:Str
         )
 
         if (uiState.isLoading) {
-            FullScreenLoader()
-        } else {
+            FullScreenBlurredBackgroundLoader()
+        }
+            uiState.room?.game?.roundState?.let{
+                if(it.status==RoundStatus.BETTING&& it.playerTurn == uiState.localPlayerId){
+                    BiddingCard {bid->
+                        viewmodel.onIntent(PlayBoardIntent.PlayBid(bid))
+                    }
+                }
+            }
+
             if(uiState.showScoreCard){
                 ScoreBoard(
                     uiState = uiState,
@@ -150,7 +173,7 @@ fun PlayingBoardScreen(reconnectionToken:String,navigateBack:(reconnectToken:Str
                 Content(reconnectionToken, viewmodel, uiState)
             }
 
-        }
+
 
 
     }
@@ -194,6 +217,7 @@ fun PlayingBoardScreen(reconnectionToken:String,navigateBack:(reconnectToken:Str
                 .align(Alignment.TopEnd)
                 .padding(10.dp)
         ){
+            viewmodel.onIntent(PlayBoardIntent.LeaveRoom(reconnectionToken))
 
         }
 
@@ -448,7 +472,7 @@ private fun FlyingCard(movingCard: MovingCard
     val animeOffset = remember { Animatable(movingCard.startPos, Offset.VectorConverter) }
 
     val rotation = remember { Animatable(movingCard.currRotation) }
-    val scale = remember { Animatable(if (movingCard.isLocal) 1.2f else 0.7f) }
+    val scale = remember { Animatable(if (movingCard.isLocal) 1f else 0.7f) }
 
         LaunchedEffect(movingCard.endPos){
             launch{
@@ -868,9 +892,6 @@ private fun ScoreBoard(uiState: PlayBoardUiState,modifier: Modifier,onDismiss:()
 
 }
 
-
-
-
 @Composable
 fun RowScope.TableCell(text: String, isHeader: Boolean = false) {
     Box(
@@ -969,6 +990,140 @@ private fun DismissButton(modifier: Modifier,onClick:()->Unit){
                 color = MaterialTheme.colorScheme.lightPrimaryBlue
             )
         }
+    }
+
+}
+
+@Composable
+private fun BiddingCard(onSelected:(Int)->Unit){
+    var selectedBid by remember { mutableStateOf(1) }
+    Box( modifier = Modifier
+        .fillMaxSize()
+        .verticalScroll(rememberScrollState())
+        .background(Color.Black.copy(alpha = 0.5f))
+        .zIndex(20f)
+        .pointerInput(Unit) {detectTapGestures {}},
+        contentAlignment = Alignment.Center){
+
+        Card(
+            modifier = Modifier
+                .width(400.dp)
+                .wrapContentSize(),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.lightPrimaryBlue
+            )
+        ){
+
+            Column(
+                modifier = Modifier.padding(10.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 10.dp, end = 10.dp, bottom = 5.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Select your bid!",
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.padding(bottom = 10.dp),
+                        color = MaterialTheme.colorScheme.extraDarkPrimaryBlue
+                    )
+                    RightClickButton(
+                        modifier = Modifier.size(30.dp)
+                    ){
+                        onSelected(selectedBid)
+                    }
+
+                }
+
+
+                FlowRow {
+                    for(i in 1..11){
+                        BidButton(
+                            isSelected = selectedBid==i,
+                            value = i,
+                            onClick = {selectedBid=i}
+                        )
+                    }
+                }
+            }
+
+
+
+        }
+
+
+    }
+
+}
+
+@Composable
+private fun BidButton(isSelected:Boolean,value:Int,onClick:()->Unit){
+    Card(
+        modifier = Modifier
+            .padding(5.dp)
+            .size(
+                width = 30.dp,
+                height = 30.dp
+            )
+            .bouncingClick { onClick() },
+        colors = CardDefaults.cardColors(
+            containerColor = if(isSelected) MaterialTheme.colorScheme.darkPrimaryBlue else Color.Transparent
+        ),
+        shape = RoundedCornerShape(5.dp),
+        border = BorderStroke(
+            width = 1.dp,
+            color = MaterialTheme.colorScheme.extraDarkPrimaryBlue
+        )
+    ){
+
+        Box(modifier = Modifier
+            .fillMaxSize(),
+            contentAlignment = Alignment.Center,
+        ){
+
+            Text(
+                text = value.toString(),
+                style = MaterialTheme.typography.titleMedium,
+                color = if(isSelected) MaterialTheme.colorScheme.lightPrimaryBlue else MaterialTheme.colorScheme.extraDarkPrimaryBlue
+            )
+
+        }
+
+    }
+}
+
+@Composable
+private fun RightClickButton(modifier: Modifier,onClick:()->Unit){
+
+    Card(
+        modifier = modifier
+            .wrapContentSize()
+            .bouncingClick { onClick() },
+        shape = RoundedCornerShape(50),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.greenColor
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 5.dp
+        ),
+    ){
+        Box(
+            modifier=Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ){
+            Icon(
+                painter = painterResource(Res.drawable.tick_icon) ,
+                contentDescription = null,
+                tint = Color.White,
+                modifier = Modifier.padding(5.dp)
+            )
+        }
+
     }
 
 }
