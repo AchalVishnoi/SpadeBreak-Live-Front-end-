@@ -2,8 +2,8 @@ package org.example.project.data.remote
 
 object ApiRoutes {
 
-    const val HTTP_BASE_URL="http://192.168.3.156:8081/api/rooms"
-    const val WEBSOCKET_BASE_URL="ws://192.168.3.156:8081/ws"
+    const val HTTP_BASE_URL="http://SpadeBreakLive.eu-north-1.elasticbeanstalk.com/api/rooms"
+    const val WEBSOCKET_BASE_URL="ws://SpadeBreakLive.eu-north-1.elasticbeanstalk.com/ws"
 
     const val CREATE_ROOM_API="$HTTP_BASE_URL"
     fun JOIN_ROOM_API(roomId:String):String="$HTTP_BASE_URL/${roomId}/join"

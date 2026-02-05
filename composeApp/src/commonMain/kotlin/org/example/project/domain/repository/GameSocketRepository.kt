@@ -2,6 +2,7 @@ package org.example.project.domain.repository
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharedFlow
+import org.example.project.components.Reaction
 import org.example.project.domain.models.GameMessage
 import org.example.project.domain.models.GameMessageEnvelope
 
@@ -20,5 +21,5 @@ interface GameSocketRepository {
 
     suspend fun sendChat(playerId: String, roomId: String, message: String)
 
-    suspend fun sendReaction(playerId: String, roomId: String, reaction: String)
+    suspend fun sendReaction(playerId: String, roomId: String, reaction: Reaction)
 }

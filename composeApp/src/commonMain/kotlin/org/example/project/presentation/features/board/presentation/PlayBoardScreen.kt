@@ -18,14 +18,17 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.foundation.gestures.scrollable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -34,7 +37,13 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -43,6 +52,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Score
 import androidx.compose.material.icons.filled.Scoreboard
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardColors
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -60,6 +70,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.geometry.Offset
@@ -76,11 +87,16 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Popup
+import androidx.compose.ui.window.PopupProperties
 import androidx.compose.ui.zIndex
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.example.project.components.Avatar
 import org.example.project.components.Card
+import org.example.project.components.Reaction
+import org.example.project.components.getAnimation
+import org.example.project.components.showReactionAnimation
 import org.example.project.data.local.PrefrenceManager
 import org.example.project.domain.models.RoundStatus
 import org.example.project.domain.models.getPlayerById
@@ -96,12 +112,15 @@ import org.example.project.presentation.ui.theme.darkPrimaryBlue
 import org.example.project.presentation.ui.theme.extraDarkPrimaryBlue
 import org.example.project.presentation.ui.theme.greenColor
 import org.example.project.presentation.ui.theme.lightPrimaryBlue
+import org.example.project.presentation.ui.theme.lightRedColor
+import org.example.project.presentation.utils.RenderLottieFile
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.getKoin
 import org.koin.compose.viewmodel.koinViewModel
 import spadebreaklive.composeapp.generated.resources.Res
 import spadebreaklive.composeapp.generated.resources.blue_wooden_background
 import spadebreaklive.composeapp.generated.resources.cards_back
+import spadebreaklive.composeapp.generated.resources.emogi_icon
 import spadebreaklive.composeapp.generated.resources.exit
 import spadebreaklive.composeapp.generated.resources.like
 import spadebreaklive.composeapp.generated.resources.score_card_icon
@@ -299,6 +318,35 @@ fun PlayingBoardScreen(reconnectionToken:String,navigateBack:(reconnectToken:Str
                 )
             }
         }
+
+        ReactionLayer(
+            reactionList = uiState.reactionsList,
+            modifier = Modifier.fillMaxSize()
+        )
+
+        ReactionPopupButton(
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(30.dp)
+        ){
+            viewmodel.onIntent(PlayBoardIntent.ReactionMessage(it))
+        }
+
+        uiState.room?.game?.roundState?.status?.let{
+            if(it==RoundStatus.BETTING){
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ){
+                    Text(
+                        text = "${uiState.room.players.getPlayerById(uiState.room.game.roundState.playerTurn)?.nickname?:"player"} is bidding.....",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = Color.White
+                    )
+                }
+            }
+        }
+
 
 
     }
@@ -547,7 +595,6 @@ private fun PlayerCardFan(seat: Seat,cardCnt:Int=13){
 
 }
 
-
 @Composable
 private fun FanCard(total: Int,idx:Int,preRotation: Float){
 
@@ -630,6 +677,7 @@ private fun PlayerUi(playerId:String,uiState: PlayBoardUiState,updatePlayerOffse
                 }
         )
 
+
         when(seat){
             Seat.TOP,Seat.BOTTOM->{
                 Row {
@@ -688,6 +736,49 @@ private fun PlayerAvatar(avatar: Avatar,size: Dp = 50.dp,isActiveTurn:Boolean=fa
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize().clip(CircleShape)
             )
+        }
+    }
+}
+
+@Composable
+fun ReactionLayer(
+    reactionList: List<ReactionMessage>,
+    modifier: Modifier = Modifier
+) {
+    Box(modifier = modifier.fillMaxSize()) {
+
+        reactionList.forEach { reactionMessage ->
+
+            val (alignment, baseOffset) = when (reactionMessage.seat) {
+                Seat.BOTTOM -> Alignment.BottomCenter to IntOffset(0, -120)
+                Seat.TOP -> Alignment.TopCenter to IntOffset(0, 120)
+                Seat.LEFT -> Alignment.CenterStart to IntOffset(120, 0)
+                Seat.RIGHT -> Alignment.CenterEnd to IntOffset(-120, 0)
+            }
+
+            Box(
+                modifier = Modifier
+                    .align(alignment)
+                    .offset {
+                        IntOffset(
+                            baseOffset.x + reactionMessage.offsetX,
+                            baseOffset.y + reactionMessage.offsetY
+                        )
+                    }
+                    .size(reactionMessage.size.dp)
+            ) {
+                AnimatedVisibility(
+                    visible = true,
+                    enter = scaleIn(initialScale = 0.4f) + fadeIn(),
+                    exit = scaleOut(targetScale = 0.4f) + fadeOut()
+                ) {
+                        RenderLottieFile(
+                            file = reactionMessage.reaction.showReactionAnimation() ?: 0,
+                            modifier = Modifier.fillMaxSize()
+                        )
+
+                }
+            }
         }
     }
 }
@@ -1126,4 +1217,102 @@ private fun RightClickButton(modifier: Modifier,onClick:()->Unit){
 
     }
 
+}
+
+@Composable
+private fun ReactionPopupButton(modifier: Modifier,onReactionClick: (reaction: Reaction) -> Unit){
+    var isPopUp by remember { mutableStateOf(false) }
+
+    Box(modifier=modifier, contentAlignment = Alignment.Center){
+        if(!isPopUp){
+            Card(
+                modifier = Modifier.wrapContentSize(),
+                shape = RoundedCornerShape(50),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.extraDarkPrimaryBlue
+                ),
+                elevation = CardDefaults.cardElevation(
+                    defaultElevation = 5.dp
+                ),
+            ){
+                IconButton(
+                    onClick = {isPopUp=true},
+                    modifier = Modifier
+                ){
+                    Icon(
+                        painter = painterResource(Res.drawable.emogi_icon),
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.lightPrimaryBlue,
+                        modifier = Modifier.padding(5.dp)
+                    )
+                }
+            }
+        }
+        else{
+            ReactionList(
+                onReactionClick = onReactionClick,
+                onDismissRequest = {isPopUp=false}
+            )
+        }
+    }
+
+}
+
+@Composable
+private fun ReactionList(modifier: Modifier=Modifier, onReactionClick:(reaction: Reaction)->Unit, onDismissRequest:()->Unit){
+    val reactionList = Reaction.entries
+
+    Popup(
+        alignment = Alignment.Center,
+        offset = IntOffset(-200, -200),
+        properties = PopupProperties(
+            dismissOnBackPress = true,
+            dismissOnClickOutside = true
+        ),
+        onDismissRequest = onDismissRequest
+    ) {
+        Box(
+            modifier = Modifier.wrapContentSize()
+        ) {
+            Card(
+                modifier = Modifier
+                    .wrapContentSize()
+                    .widthIn(max = 220.dp),
+                shape = RoundedCornerShape(30.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.lightPrimaryBlue
+                ),
+                elevation = CardDefaults.cardElevation(5.dp)
+            ) {
+
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(3),
+                    modifier = Modifier
+                        .wrapContentSize()
+                        . padding(12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(reactionList) { reaction ->
+                        Box(
+                            modifier = Modifier
+                                .size(56.dp)
+                                .clip(CircleShape)
+                                .background(Color.LightGray.copy(alpha = 0.3f))
+                                .clickable {
+                                    onReactionClick(reaction)
+                                    onDismissRequest()
+                                },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            RenderLottieFile(
+                                file = reaction.getAnimation() ?: 0,
+                                modifier = Modifier.size(48.dp)
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
 }

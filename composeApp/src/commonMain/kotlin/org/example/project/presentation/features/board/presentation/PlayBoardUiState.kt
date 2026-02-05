@@ -5,6 +5,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.toOffset
 import org.example.project.components.Card
+import org.example.project.components.Reaction
 import org.example.project.domain.models.Room
 import org.koin.core.definition.IndexKey
 
@@ -27,7 +28,19 @@ data class PlayBoardUiState(
     val room: Room? = null,
 
     val showScoreCard:Boolean = false,
-    val gameCompleted:Boolean = false
+    val gameCompleted:Boolean = false,
+
+    val reactionsList: List<ReactionMessage> = emptyList()
+
+)
+
+data class ReactionMessage(
+    val id:Int,
+    val reaction: Reaction,
+    val seat: Seat,
+    val offsetX: Int = (-40..40).random(),
+    val offsetY: Int = (-40..40).random(),
+    val size: Int = (80..120).random()
 )
 
 data class MovingCard(

@@ -4,6 +4,7 @@ import io.ktor.util.date.getTimeMillis
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.serialization.encodeToString
+import org.example.project.components.Reaction
 import org.example.project.data.remote.socket.SocketEngine
 import org.example.project.data.remote.socket.SocketEngine.Companion.json
 import org.example.project.domain.models.GameMessage
@@ -85,8 +86,8 @@ class GameSocketRepositoryImpl(private val socketEngine: SocketEngine):GameSocke
         socketEngine.sendRaw(json.encodeToString(msg), "/app/game/chat")
     }
 
-    override suspend fun sendReaction(playerId: String, roomId: String, reaction: String) {
-        val msg = GameMessage<String>(
+    override suspend fun sendReaction(playerId: String, roomId: String, reaction: Reaction) {
+        val msg = GameMessage<Reaction>(
             type = MessageType.REACTION,
             playLoad = reaction,
             playerId = playerId,

@@ -1,11 +1,20 @@
 package org.example.project.features.entry.presentation
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.MutableTransitionState
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.scrollable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,7 +30,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -67,10 +78,15 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Popup
+import androidx.compose.ui.window.PopupProperties
 import androidx.compose.ui.zIndex
 import kotlinx.coroutines.launch
 import org.example.project.components.Avatar
+import org.example.project.components.Reaction
+import org.example.project.components.getAnimation
 import org.example.project.data.local.PrefrenceManager
 import org.example.project.data.remote.socket.SocketEngine
 import org.example.project.domain.models.dummyPlayers
@@ -89,11 +105,13 @@ import org.example.project.presentation.ui.theme.darkPrimaryBlue
 import org.example.project.presentation.ui.theme.extraDarkPrimaryBlue
 import org.example.project.presentation.ui.theme.greenColor
 import org.example.project.presentation.ui.theme.lightPrimaryBlue
+import org.example.project.presentation.utils.RenderLottieFile
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.getKoin
 import org.koin.compose.viewmodel.koinViewModel
 import spadebreaklive.composeapp.generated.resources.Res
 import spadebreaklive.composeapp.generated.resources.blue_wooden_background
+import spadebreaklive.composeapp.generated.resources.emogi_icon
 import spadebreaklive.composeapp.generated.resources.exit
 import spadebreaklive.composeapp.generated.resources.score_card_icon
 import spadebreaklive.composeapp.generated.resources.tick_icon
@@ -440,7 +458,7 @@ fun JoinRoomCard(
 
                     buttonWithoutRipple(
                         onClick = { onSubmit() },
-                        enabled = InputValidator.isValidIdOrName(roomId)
+                        enabled = roomId.length==6
                     ){
                         Text("Join Room",
                             style = MaterialTheme.typography.labelLarge)
@@ -474,3 +492,5 @@ fun JoinRoomCard(
 
     }
 }
+
+

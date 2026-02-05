@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.decodeFromJsonElement
 import org.example.project.components.Card
+import org.example.project.components.Reaction
 import org.example.project.data.remote.socket.SocketEngine.Companion.json
 import org.example.project.domain.models.MessageType
 import org.example.project.domain.models.Player
@@ -103,6 +104,10 @@ class PlayViewmodel(private val roomServiceRepository: RoomServiceRepository,pri
 
                 is PlayBoardIntent.LeaveRoom->{
                     leaveRoom(intent.reconnectToken)
+                }
+
+                is PlayBoardIntent.ReactionMessage->{
+                    react(intent.reaction)
                 }
 
                 else ->{}
@@ -206,6 +211,39 @@ class PlayViewmodel(private val roomServiceRepository: RoomServiceRepository,pri
                                 gameCompleted = true
                             )
                         }
+                    }
+
+                    MessageType.REACTION -> {
+
+                        val reaction = json.decodeFromJsonElement<Reaction>(it.playLoad!!)
+                        val seat = _uiState.value.playerSeats[it.playerId]
+
+                        viewModelScope.launch {
+
+                            val id=_uiState.value.reactionsList.size
+
+                            _uiState.update {
+                                it.copy(
+                                    reactionsList = uiState.value.reactionsList + ReactionMessage(
+                                        reaction = reaction,
+                                        seat = seat?:Seat.BOTTOM,
+                                        id=id
+                                    )
+                                )
+                            }
+
+                            delay(5000)
+
+                            _uiState.update {
+                                it.copy(
+                                    reactionsList = uiState.value.reactionsList.filter {
+                                        it.id!=id && it.seat != seat && it.reaction!=reaction
+                                    }
+                                )
+                            }
+
+                        }
+
                     }
 
                     else->{}
@@ -439,6 +477,18 @@ class PlayViewmodel(private val roomServiceRepository: RoomServiceRepository,pri
                 bet = bid
             )
         }
+    }
+
+    private fun react(reaction: Reaction){
+
+        viewModelScope.launch {
+            gameSocketRepository.sendReaction(
+                playerId = _uiState.value.localPlayerId,
+                roomId = _uiState.value.room?.id?:"",
+                reaction=reaction
+            )
+        }
+
     }
 
     private fun leaveRoom(reconnectToken:String){
