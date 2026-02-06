@@ -54,6 +54,7 @@ import org.example.project.presentation.ui.component.FullScreenBlurredBackground
 import org.example.project.presentation.ui.component.GlassCard
 import org.example.project.presentation.ui.effects.bouncingClick
 import org.example.project.presentation.ui.theme.darkPrimaryBlue
+import org.example.project.presentation.ui.theme.extraDarkPrimaryBlue
 import org.example.project.presentation.ui.theme.lightPrimaryBlue
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.getKoin
@@ -117,7 +118,7 @@ fun WaitingRoomScreen(waitingRoomViewModel: WaitingRoomViewModel,reconnectToken:
             modifier = Modifier
                 .padding(20.dp)
                 .clip(CircleShape)
-                .background(color = MaterialTheme.colorScheme.error.copy(0.6f), shape = CircleShape)
+                .background(color = MaterialTheme.colorScheme.extraDarkPrimaryBlue, shape = CircleShape)
                 .align(Alignment.TopStart)
         ){
             Icon(
@@ -309,7 +310,7 @@ Box(modifier = Modifier.fillMaxSize().zIndex(1f), contentAlignment = alignment){
                 .align(alignment)
                 .padding(50.dp)
                 .size(50.dp),
-            color = MaterialTheme.colorScheme.darkPrimaryBlue,
+            color = MaterialTheme.colorScheme.extraDarkPrimaryBlue,
             strokeWidth = 5.dp
 
         )
@@ -326,7 +327,7 @@ Box(modifier = Modifier.fillMaxSize().zIndex(1f), contentAlignment = alignment){
             shape = CircleShape,
 
             colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.darkPrimaryBlue
+                containerColor = MaterialTheme.colorScheme.extraDarkPrimaryBlue
             ),
             elevation = CardDefaults.cardElevation(
                 defaultElevation = 10.dp
