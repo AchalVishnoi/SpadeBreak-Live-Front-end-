@@ -24,6 +24,7 @@ data class PlayBoardUiState(
         Seat.BOTTOM to Offset.Zero
     ),
     val localPlayerId:String = "",
+    val playersHandCards:Map<Seat,List<String>> = emptyMap(),
 
     val room: Room? = null,
 

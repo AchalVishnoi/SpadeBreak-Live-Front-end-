@@ -192,6 +192,10 @@ class PlayViewmodel(private val roomServiceRepository: RoomServiceRepository,pri
                         }
                         val seat = _uiState.value.playerSeats[it.playerId]
                         if(it.playerId!=_uiState.value.localPlayerId){
+                            updatePlayersHandCards(
+                                it.playerId,
+                                room.game?.roundState?.handCards?.get(it.playerId)
+                            )
                             flightCardToCenter(
                                 card = Card.getCardById(room.game?.roundState?.centerTrickedCard?.get(it.playerId)!!),
                                 seat = seat!!,
@@ -324,6 +328,20 @@ class PlayViewmodel(private val roomServiceRepository: RoomServiceRepository,pri
 
     }
 
+    private fun updatePlayersHandCards(playerId:String?,handCards:List<String>?){
+
+        uiState.value.playerSeats[playerId]?.let {seat->
+            handCards?.let {handCards->
+                _uiState.update {
+                    it.copy(
+                        playersHandCards = it.playersHandCards + (seat to handCards)
+                    )
+                }
+            }
+        }
+
+    }
+
     private fun finalizeLanding(movingCard: MovingCard){
         val zIndex = _uiState.value.centerTable.size+1
         _uiState.update { state->
@@ -395,7 +413,15 @@ class PlayViewmodel(private val roomServiceRepository: RoomServiceRepository,pri
                 }
                 mapPlayerIdsWithSeat(result.room.players,result.playerId)
                 result.room.game?.roundState?.handCards?.let {
-                    it[result.playerId]?.let { it1 -> updateHandCards(it1) }
+                    it.forEach {
+                        if(it.key==result.playerId){
+                             updateHandCards(it.value)
+                        }
+                        else{
+                            updatePlayersHandCards(it.key,it.value)
+                        }
+                    }
+
                 }
                 result.room.game?.roundState?.centerTrickedCard?.let {
                     updateCenterCards(it)
@@ -512,6 +538,8 @@ class PlayViewmodel(private val roomServiceRepository: RoomServiceRepository,pri
             _uiState.value=_uiState.value.copy(isLoading = false)
         }
     }
+
+
 
 }
 

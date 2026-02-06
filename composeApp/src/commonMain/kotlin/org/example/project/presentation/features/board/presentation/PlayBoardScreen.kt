@@ -119,6 +119,8 @@ import org.koin.compose.getKoin
 import org.koin.compose.viewmodel.koinViewModel
 import spadebreaklive.composeapp.generated.resources.Res
 import spadebreaklive.composeapp.generated.resources.blue_wooden_background
+import spadebreaklive.composeapp.generated.resources.card_back_blue
+import spadebreaklive.composeapp.generated.resources.card_back_red
 import spadebreaklive.composeapp.generated.resources.cards_back
 import spadebreaklive.composeapp.generated.resources.emogi_icon
 import spadebreaklive.composeapp.generated.resources.exit
@@ -193,11 +195,9 @@ fun PlayingBoardScreen(reconnectionToken:String,navigateBack:(reconnectToken:Str
             }
 
 
-
+       }
 
     }
-
-}
 
 @Composable fun Content(reconnectionToken: String,viewmodel: PlayViewmodel,uiState: PlayBoardUiState){
     var centerPosition  by remember{ mutableStateOf(Offset.Zero) }
@@ -244,6 +244,44 @@ fun PlayingBoardScreen(reconnectionToken:String,navigateBack:(reconnectToken:Str
 
 
 
+
+
+
+        MyHandCard(
+            uiState = uiState,
+            modifier = Modifier
+        ){card,offset->
+            println("card ${card.id} played")
+            viewmodel.onIntent(
+                PlayBoardIntent.CardPlayed(
+                    card = card,
+                    playerId = "playerId",
+                    offset = offset
+                )
+            )
+        }
+
+        uiState.playersHandCards[Seat.LEFT]?.let {
+            PlayerCardFan(
+                seat = Seat.LEFT,
+                cardList = it
+            )
+        }
+
+        uiState.playersHandCards[Seat.RIGHT]?.let {
+            PlayerCardFan(
+                seat = Seat.RIGHT,
+                cardList = it
+            )
+        }
+        uiState.playersHandCards[Seat.TOP]?.let {
+            PlayerCardFan(
+                seat = Seat.TOP,
+                cardList = it
+            )
+        }
+
+
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -279,29 +317,6 @@ fun PlayingBoardScreen(reconnectionToken:String,navigateBack:(reconnectToken:Str
         }
 
 
-        MyHandCard(
-            uiState = uiState,
-            modifier = Modifier
-        ){card,offset->
-            println("card ${card.id} played")
-            viewmodel.onIntent(
-                PlayBoardIntent.CardPlayed(
-                    card = card,
-                    playerId = "playerId",
-                    offset = offset
-                )
-            )
-        }
-
-        PlayerCardFan(
-            seat = Seat.LEFT
-        )
-        PlayerCardFan(
-            seat = Seat.RIGHT
-        )
-        PlayerCardFan(
-            seat = Seat.TOP
-        )
 
 
 
@@ -567,7 +582,7 @@ private fun FlyingCard(movingCard: MovingCard
 }
 
 @Composable
-private fun PlayerCardFan(seat: Seat,cardCnt:Int=13){
+private fun PlayerCardFan(seat: Seat,cardList:List<String> = emptyList()){
     val rotation = getRotationForSeat(seat)
     val alignment = when(seat){
         Seat.BOTTOM -> Alignment.BottomCenter
@@ -586,8 +601,8 @@ private fun PlayerCardFan(seat: Seat,cardCnt:Int=13){
         .fillMaxSize(),
         contentAlignment = alignment){
 
-        for(i in 0 until cardCnt){
-            FanCard(cardCnt,i,rotation)
+        cardList.forEachIndexed { i,card->
+            FanCard(cardList.size,i,rotation,seat)
         }
 
     }
@@ -596,21 +611,21 @@ private fun PlayerCardFan(seat: Seat,cardCnt:Int=13){
 }
 
 @Composable
-private fun FanCard(total: Int,idx:Int,preRotation: Float){
+private fun FanCard(total: Int,idx:Int,preRotation: Float,seat: Seat){
 
     var cardPositionInRoot by remember { mutableStateOf(Offset.Zero) }
 
     val scope = rememberCoroutineScope()
 
-    val offsetY= remember { Animatable( 100f) }
+    val offsetY= remember { Animatable( if(seat==Seat.TOP) 0f else -60f) }
 
 
     val offsetX = remember { Animatable(0f) }
     val rotation = remember { Animatable(0f) }
 
 
-    val targetX=(idx-total/2)*3f
-    val targetRotation=(idx-total/2)*10f
+    val targetX=(idx-total/2)*4f
+    val targetRotation=(idx-total/2)*7f
 
     LaunchedEffect(Unit) {
         delay(idx * 100L)
@@ -622,10 +637,9 @@ private fun FanCard(total: Int,idx:Int,preRotation: Float){
 
 
     Image(
-        painter = painterResource(Res.drawable.cards_back),
+        painter = painterResource(Res.drawable.card_back_red),
         contentDescription = null,
         modifier = Modifier
-            .size(100.dp)
             .onGloballyPositioned {
                 cardPositionInRoot = it.positionInRoot()
             }
@@ -635,6 +649,8 @@ private fun FanCard(total: Int,idx:Int,preRotation: Float){
                 translationY = offsetY.value
                 rotationZ = rotation.value
             }
+            .clip(RoundedCornerShape(5.dp))
+            .height(70.dp)
     )
 
 }
@@ -679,18 +695,37 @@ private fun PlayerUi(playerId:String,uiState: PlayBoardUiState,updatePlayerOffse
 
 
         when(seat){
-            Seat.TOP,Seat.BOTTOM->{
+            Seat.TOP->{
                 Row {
                     ScoreAndNameText(player?.nickname?:"player")
                     PlayerAvatar(avatar,isActiveTurn = uiState.room?.game?.roundState?.playerTurn==playerId)
                     ScoreAndNameText("$score/$bet")
                 }
             }
-            Seat.LEFT,Seat.RIGHT->{
-                Column(horizontalAlignment=Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center) {
+            Seat.BOTTOM->{
+                Row(
+                    verticalAlignment = Alignment.Bottom
+                ) {
                     ScoreAndNameText(player?.nickname?:"player")
-                    PlayerAvatar(avatar, isActiveTurn = uiState.room?.game?.roundState?.playerTurn==playerId)
+                    PlayerAvatar(avatar,isActiveTurn = uiState.room?.game?.roundState?.playerTurn==playerId)
+                    ScoreAndNameText("$score/$bet")
+                }
+            }
+            Seat.LEFT->{
+                Column(
+                    horizontalAlignment = Alignment.Start
+                ) {
+                    ScoreAndNameText(player?.nickname?:"player")
+                    PlayerAvatar(avatar,isActiveTurn = uiState.room?.game?.roundState?.playerTurn==playerId)
+                    ScoreAndNameText("$score/$bet")
+                }
+            }
+            Seat.RIGHT->{
+                Column(
+                    horizontalAlignment = Alignment.End
+                ) {
+                    ScoreAndNameText(player?.nickname?:"player")
+                    PlayerAvatar(avatar,isActiveTurn = uiState.room?.game?.roundState?.playerTurn==playerId)
                     ScoreAndNameText("$score/$bet")
                 }
             }
