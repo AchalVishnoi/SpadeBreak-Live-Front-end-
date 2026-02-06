@@ -97,6 +97,7 @@ import org.example.project.presentation.features.board.presentation.ScoreCell
 import org.example.project.presentation.features.home.presentation.HomeEvents
 import org.example.project.presentation.features.home.presentation.HomeIntent
 import org.example.project.presentation.features.home.presentation.InputValidator
+import org.example.project.presentation.toast.ToastManager
 import org.example.project.presentation.ui.component.FullScreenBlurredBackgroundLoader
 import org.example.project.presentation.ui.component.GlassCard
 import org.example.project.presentation.ui.component.buttonWithoutRipple
@@ -126,6 +127,7 @@ fun HomeScreen(viewModel: HomeViewModel,
     val viewmodel = koinViewModel<HomeViewModel>()
     val preferenceManager: PrefrenceManager = getKoin().get()
     val uiState=viewmodel.uiState.collectAsState()
+    val toastManager = getKoin().get<ToastManager>()
 
     LaunchedEffect(Unit){
 
@@ -137,7 +139,9 @@ fun HomeScreen(viewModel: HomeViewModel,
                     preferenceManager.saveReconnectToken(it.reconnectionToken)
                     navigateToWaitingRoom(it.reconnectionToken)
                 }
-                is HomeEvents.ShowToast -> println(it.message)
+                is HomeEvents.ShowToast -> {
+                    toastManager.showToast(it.message)
+                }
             }
         }
     }

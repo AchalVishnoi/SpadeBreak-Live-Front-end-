@@ -49,6 +49,7 @@ import org.example.project.data.local.PrefrenceManager
 import org.example.project.presentation.utils.SoundPlayer
 import org.example.project.domain.models.Player
 import org.example.project.domain.models.getPlayerById
+import org.example.project.presentation.toast.ToastManager
 import org.example.project.presentation.ui.component.FullScreenBlurredBackgroundLoader
 import org.example.project.presentation.ui.component.GlassCard
 import org.example.project.presentation.ui.effects.bouncingClick
@@ -71,6 +72,7 @@ fun WaitingRoomScreen(waitingRoomViewModel: WaitingRoomViewModel,reconnectToken:
     val arr = reconnectToken.split(":")
     val roomId=arr[0]
     val playerId=arr[1]
+    val toastManager = getKoin().get<ToastManager>()
 
 
     LaunchedEffect(Unit){
@@ -82,7 +84,7 @@ fun WaitingRoomScreen(waitingRoomViewModel: WaitingRoomViewModel,reconnectToken:
     LaunchedEffect(Unit){
         waitingRoomViewModel.events.collect(){
             when(it){
-                is WaitingRoomEvents.ShowToast -> println(it.message)
+                is WaitingRoomEvents.ShowToast -> toastManager.showToast(it.message)
                 is WaitingRoomEvents.PlaySound ->{
                     soundPlayer.playSound(it.uiSound)
                 }

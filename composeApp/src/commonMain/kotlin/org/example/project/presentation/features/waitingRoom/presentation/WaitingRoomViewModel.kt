@@ -74,8 +74,15 @@ class WaitingRoomViewModel(private val gameSocketRepository: GameSocketRepositor
                     MessageType.PLAYER_LEFT->{
                         val room = json.decodeFromJsonElement<Room>(it.playLoad!!)
                         val name=_uiState.value.room?.players?.getPlayerById(it.playerId?:"1")
-                        _uiState.value=_uiState.value.copy(room = room)
-                        _events.emit(WaitingRoomEvents.ShowToast("${name?.nickname} left!"))
+                        if(it.playerId==uiState.value.playerId){
+                            _events.emit(WaitingRoomEvents.ShowToast("You left!"))
+                            _uiState.value=_uiState.value.copy(room = room)
+                        }
+                        else{
+                            _events.emit(WaitingRoomEvents.ShowToast("${name?.nickname} left!"))
+                        }
+
+
                     }
                     MessageType.PLAYER_IS_READY->{
                         val room = json.decodeFromJsonElement<Room>(it.playLoad!!)

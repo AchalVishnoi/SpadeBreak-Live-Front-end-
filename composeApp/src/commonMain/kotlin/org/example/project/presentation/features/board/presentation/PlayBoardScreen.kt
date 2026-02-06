@@ -104,6 +104,7 @@ import org.example.project.presentation.features.board.GlowingCircularBackground
 import org.example.project.presentation.features.board.HelperFunctions
 import org.example.project.presentation.features.board.getRotationForSeat
 import org.example.project.presentation.features.board.getTargetSlot
+import org.example.project.presentation.toast.ToastManager
 import org.example.project.presentation.ui.component.FullScreenBlurredBackgroundLoader
 import org.example.project.presentation.ui.component.FullScreenLoader
 import org.example.project.presentation.ui.component.GlassCard
@@ -134,6 +135,7 @@ fun PlayingBoardScreen(reconnectionToken:String,navigateBack:(reconnectToken:Str
     val viewmodel  = koinViewModel<PlayViewmodel>()
 
     val uiState by viewmodel.uiState.collectAsState()
+    val toastManager = getKoin().get<ToastManager>()
 
     LaunchedEffect(Unit){
         viewmodel.onIntent(PlayBoardIntent.ReconnectRoom(reconnectionToken))
@@ -146,7 +148,9 @@ fun PlayingBoardScreen(reconnectionToken:String,navigateBack:(reconnectToken:Str
                 is PlayBoardEvents.CardPlayed -> {}
                 PlayBoardEvents.NavigateBack -> {navigateBack(reconnectionToken)}
                 PlayBoardEvents.ShowScoreCard -> {}
-                is PlayBoardEvents.ShowToast -> {}
+                is PlayBoardEvents.ShowToast -> {
+                    toastManager.showToast(it.message)
+                }
                 is PlayBoardEvents.TrickWinner -> {}
                 PlayBoardEvents.NavigateHome -> {
                     prefrenceManager.deleteToken()

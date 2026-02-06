@@ -160,12 +160,14 @@ class PlayViewmodel(private val roomServiceRepository: RoomServiceRepository,pri
                     }
                     MessageType.PLAYER_LEFT->{
                         val room = json.decodeFromJsonElement<Room>(it.playLoad!!)
-                        _events.emit(PlayBoardEvents.ShowToast(
-                            uiState.value.room?.players?.filter { it1->
-                                it1.id==it.playerId
-                            }?.get(0)?.nickname +
-                                " left!"))
-                        _events.emit(PlayBoardEvents.NavigateBack)
+                        val name=_uiState.value.room?.players?.getPlayerById(it.playerId?:"1")
+                        if(it.playerId==uiState.value.localPlayerId){
+                            _events.emit(PlayBoardEvents.ShowToast("You left!"))
+                            _uiState.value=_uiState.value.copy(room = room)
+                        }
+                        else{
+                            _events.emit(PlayBoardEvents.ShowToast("${name?.nickname} left!"))
+                        }
                     }
                     MessageType.ROUND_SCORE_UPDATED->{
                         val room = json.decodeFromJsonElement<Room>(it.playLoad!!)

@@ -12,5 +12,6 @@ fun featuresModel():Module = module {
     factory { HomeViewModel(get()) }
     factory { WaitingRoomViewModel(get(),get()) }
     factory { PlayViewmodel(get(),get()) }
-
 }
+
+expect fun toastModule():Module
