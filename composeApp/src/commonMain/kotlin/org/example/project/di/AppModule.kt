@@ -4,7 +4,10 @@ import org.koin.core.module.Module
 import org.koin.dsl.module
 
 fun appModule():List<Module> = listOf(
-    playingBoardModel(),
-    homeModel(),
-    soundPlayerModule()
+    featuresModel(),
+    soundPlayerModule(),
+    networkModule(),
+    coreModule(),
+    repositoryModule(),
+    toastModule()
 )

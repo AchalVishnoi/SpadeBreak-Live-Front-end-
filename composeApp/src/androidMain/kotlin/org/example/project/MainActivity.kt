@@ -5,9 +5,13 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.tooling.preview.Preview
+import org.example.project.data.remote.socket.SocketEngine
+import org.koin.compose.getKoin
 
 class MainActivity : ComponentActivity() {
+
+
+
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
@@ -16,10 +20,23 @@ class MainActivity : ComponentActivity() {
             App()
         }
     }
+
+    override fun onDestroy() {
+        super.onDestroy()
+    }
+
+    override fun onPause() {
+
+        super.onPause()
+    }
 }
 
-@Preview
 @Composable
 fun AppAndroidPreview() {
     App()
+}
+
+@Composable
+fun PauseSocketEngine(){
+    val socketEngine = getKoin().get<SocketEngine>()
 }

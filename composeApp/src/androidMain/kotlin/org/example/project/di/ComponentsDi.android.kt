@@ -1,6 +1,6 @@
 package org.example.project.di
 
-import org.example.project.core.SoundPlayer
+import org.example.project.presentation.utils.SoundPlayer
 import org.koin.core.module.Module
 import org.koin.dsl.module
 
