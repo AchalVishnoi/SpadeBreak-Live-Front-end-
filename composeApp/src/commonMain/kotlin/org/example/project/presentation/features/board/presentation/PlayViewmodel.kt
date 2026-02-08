@@ -127,14 +127,25 @@ class PlayViewmodel(private val roomServiceRepository: RoomServiceRepository,pri
 
                     MessageType.NEW_ROUND_STARTED->{
                         val room = json.decodeFromJsonElement<Room>(it.playLoad!!)
-                        room.game?.roundState?.handCards?.get(_uiState.value.localPlayerId)?.let {
-                            it1 -> updateHandCards(it1)
+
+                        room.game?.roundState?.handCards?.let {
+                            it.forEach {
+                                if(it.key==_uiState.value.localPlayerId){
+                                    updateHandCards(it.value)
+                                }
+                                else{
+                                    val seat = _uiState.value.playerSeats[it.key]
+                                    updatePlayersHandCards(seat!!,it.value)
+                                }
+                            }
                         }
+
                         _uiState.update { state->
                             state.copy(
                                 room = room
                             )
                         }
+
                     }
                     MessageType.BET->{
                         val room = json.decodeFromJsonElement<Room>(it.playLoad!!)
@@ -163,10 +174,10 @@ class PlayViewmodel(private val roomServiceRepository: RoomServiceRepository,pri
                         val name=_uiState.value.room?.players?.getPlayerById(it.playerId?:"1")
                         if(it.playerId==uiState.value.localPlayerId){
                             _events.emit(PlayBoardEvents.ShowToast("You left!"))
-                            _uiState.value=_uiState.value.copy(room = room)
                         }
                         else{
                             _events.emit(PlayBoardEvents.ShowToast("${name?.nickname} left!"))
+                            _events.emit(PlayBoardEvents.NavigateBack)
                         }
                     }
                     MessageType.ROUND_SCORE_UPDATED->{
@@ -177,9 +188,12 @@ class PlayViewmodel(private val roomServiceRepository: RoomServiceRepository,pri
                             flightTheCardsToWinner(seat?:Seat.BOTTOM)
                         }
 
+                        delay(1500)
+
                         _uiState.update { state->
                             state.copy(
-                                room = room
+                                room = room,
+                                cardPlayed = false
                             )
                         }
 
@@ -187,16 +201,11 @@ class PlayViewmodel(private val roomServiceRepository: RoomServiceRepository,pri
                     MessageType.PLAY_CARD->{
                         val room = json.decodeFromJsonElement<Room>(it.playLoad!!)
                         println("play card called in viewmodel")
-                        _uiState.update { state->
-                            state.copy(
-                                room = room
-                            )
-                        }
                         val seat = _uiState.value.playerSeats[it.playerId]
                         if(it.playerId!=_uiState.value.localPlayerId){
                             updatePlayersHandCards(
-                                it.playerId,
-                                room.game?.roundState?.handCards?.get(it.playerId)
+                                seat!!,
+                                room.game?.roundState?.handCards?.get(it.playerId)!!
                             )
                             flightCardToCenter(
                                 card = Card.getCardById(room.game?.roundState?.centerTrickedCard?.get(it.playerId)!!),
@@ -205,6 +214,19 @@ class PlayViewmodel(private val roomServiceRepository: RoomServiceRepository,pri
                                 isLocal = true
                             )
                         }
+
+                        if((room?.game?.roundState?.centerTrickedCard?.size ?: 0) < 4){
+                            _uiState.update { state->
+                                state.copy(
+                                    room = room,
+                                    cardPlayed = false
+                                )
+                            }
+                        }
+
+
+
+
                     }
 
                     MessageType.GAME_COMPLETED ->{
@@ -328,19 +350,22 @@ class PlayViewmodel(private val roomServiceRepository: RoomServiceRepository,pri
             )
         }
 
+        viewModelScope.launch {
+            _events.emit(PlayBoardEvents.PlaySound(UiSound.CARD_SWAP))
+        }
+
     }
 
-    private fun updatePlayersHandCards(playerId:String?,handCards:List<String>?){
+    private fun updatePlayersHandCards(seat: Seat,handCards: List<String>){
 
-        uiState.value.playerSeats[playerId]?.let {seat->
-            handCards?.let {handCards->
+
                 _uiState.update {
                     it.copy(
                         playersHandCards = it.playersHandCards + (seat to handCards)
                     )
                 }
-            }
-        }
+
+
 
     }
 
@@ -389,6 +414,10 @@ class PlayViewmodel(private val roomServiceRepository: RoomServiceRepository,pri
                 centerTable = emptyMap()
             )
         }
+
+        viewModelScope.launch {
+            _events.emit(PlayBoardEvents.PlaySound(UiSound.CARD_SWAP))
+        }
     }
 
     private fun throwCardToWinner(){
@@ -420,7 +449,8 @@ class PlayViewmodel(private val roomServiceRepository: RoomServiceRepository,pri
                              updateHandCards(it.value)
                         }
                         else{
-                            updatePlayersHandCards(it.key,it.value)
+                            val seat = _uiState.value.playerSeats[it.key]
+                            updatePlayersHandCards(seat!!,it.value)
                         }
                     }
 
@@ -493,6 +523,9 @@ class PlayViewmodel(private val roomServiceRepository: RoomServiceRepository,pri
                 roomId = _uiState.value.room?.id?:"",
                 card = card.id
             )
+            _uiState.update {
+                it.copy(cardPlayed = true)
+            }
         }
 
     }

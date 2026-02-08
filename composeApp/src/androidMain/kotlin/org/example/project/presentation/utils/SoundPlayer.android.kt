@@ -14,7 +14,9 @@ actual class SoundPlayer(context: Context){
 
         UiSound.CLICK to soundPool.load(context, R.raw.button_click,1),
         UiSound.WATER_DROP to soundPool.load(context,R.raw.water_drip,1),
-        UiSound.READY_SOUND to soundPool.load(context,R.raw.ready_sound,1)
+        UiSound.READY_SOUND to soundPool.load(context,R.raw.ready_sound,1),
+        UiSound.CARD_SWAP to soundPool.load(context,R.raw.card_swaping_sound,1),
+        UiSound.CARD_SPREADING to soundPool.load(context,R.raw.card_spreading_short_sound,1),
 
     )
 

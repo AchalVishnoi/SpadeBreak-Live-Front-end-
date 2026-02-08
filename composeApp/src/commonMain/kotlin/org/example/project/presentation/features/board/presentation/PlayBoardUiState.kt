@@ -30,6 +30,7 @@ data class PlayBoardUiState(
 
     val showScoreCard:Boolean = false,
     val gameCompleted:Boolean = false,
+    val cardPlayed:Boolean = false,
 
     val reactionsList: List<ReactionMessage> = emptyList()
 

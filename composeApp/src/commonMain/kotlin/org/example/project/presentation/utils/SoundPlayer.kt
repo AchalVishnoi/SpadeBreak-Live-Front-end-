@@ -9,6 +9,8 @@ enum class UiSound {
     SUCCESS,
     ERROR,
     CARD_SHUFFLE,
+    CARD_SWAP,
+    CARD_SPREADING,
     GAME_WIN,
     GAME_LOSE,
     WATER_DROP,
