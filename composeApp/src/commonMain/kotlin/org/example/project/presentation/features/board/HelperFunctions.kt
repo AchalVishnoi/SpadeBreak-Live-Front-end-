@@ -14,7 +14,7 @@ object HelperFunctions {
         val room = uiState.room ?: return false
         val round = room.game?.roundState ?: return false
 
-        if (round.playerTurn != uiState.localPlayerId||round.status == RoundStatus.BETTING) return false
+        if (uiState.cardPlayed||(round.playerTurn != uiState.localPlayerId||round.status == RoundStatus.BETTING)) return false
 
         val tableCards = uiState.centerTable.values
         val hand = uiState.handCard

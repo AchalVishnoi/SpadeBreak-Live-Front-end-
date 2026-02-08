@@ -115,6 +115,8 @@ import org.example.project.presentation.ui.theme.greenColor
 import org.example.project.presentation.ui.theme.lightPrimaryBlue
 import org.example.project.presentation.ui.theme.lightRedColor
 import org.example.project.presentation.utils.RenderLottieFile
+import org.example.project.presentation.utils.SoundPlayer
+import org.example.project.presentation.utils.UiSound
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.getKoin
 import org.koin.compose.viewmodel.koinViewModel
@@ -136,6 +138,7 @@ fun PlayingBoardScreen(reconnectionToken:String,navigateBack:(reconnectToken:Str
 
     val uiState by viewmodel.uiState.collectAsState()
     val toastManager = getKoin().get<ToastManager>()
+    val soundPlayer:SoundPlayer = getKoin().get()
 
     LaunchedEffect(Unit){
         viewmodel.onIntent(PlayBoardIntent.ReconnectRoom(reconnectionToken))
@@ -155,6 +158,9 @@ fun PlayingBoardScreen(reconnectionToken:String,navigateBack:(reconnectToken:Str
                 PlayBoardEvents.NavigateHome -> {
                     prefrenceManager.deleteToken()
                     navigateToHomeScreen()
+                }
+                is PlayBoardEvents.PlaySound ->{
+                    soundPlayer.playSound(it.sound)
                 }
             }
         }
@@ -267,14 +273,14 @@ fun PlayingBoardScreen(reconnectionToken:String,navigateBack:(reconnectToken:Str
 
         uiState.playersHandCards[Seat.LEFT]?.let {
             PlayerCardFan(
-                seat = Seat.LEFT,
+                seat = Seat.RIGHT,
                 cardList = it
             )
         }
 
         uiState.playersHandCards[Seat.RIGHT]?.let {
             PlayerCardFan(
-                seat = Seat.RIGHT,
+                seat = Seat.LEFT,
                 cardList = it
             )
         }
@@ -320,10 +326,12 @@ fun PlayingBoardScreen(reconnectionToken:String,navigateBack:(reconnectToken:Str
             }
         }
 
-
-
-
-
+        Box(modifier = Modifier.fillMaxSize().zIndex(20f)){
+            ReactionLayer(
+                reactionList = uiState.reactionsList,
+                modifier = Modifier.fillMaxSize()
+            )
+        }
 
 
         uiState.playerSeats.forEach {
@@ -338,10 +346,6 @@ fun PlayingBoardScreen(reconnectionToken:String,navigateBack:(reconnectToken:Str
             }
         }
 
-        ReactionLayer(
-            reactionList = uiState.reactionsList,
-            modifier = Modifier.fillMaxSize()
-        )
 
         ReactionPopupButton(
             modifier = Modifier
@@ -422,6 +426,7 @@ private fun AnimatedHandCard(
     canPlay: Boolean = true,
     onCardPlayed: (card: Card, offset: Offset) -> Unit
 ) {
+    val soundPlayer:SoundPlayer = getKoin().get()
     var cardPositionInRoot by remember { mutableStateOf(Offset.Zero) }
     var cardSize by remember { mutableStateOf(IntSize.Zero) }
 
@@ -437,8 +442,12 @@ private fun AnimatedHandCard(
 
     LaunchedEffect(Unit) {
         delay(index * 100L)
-        scope.launch { offsetX.animateTo(targetX, tween(600)) }
+        soundPlayer.playSound(UiSound.CARD_SPREADING)
+        scope.launch {
+            offsetX.animateTo(targetX, tween(600))
+        }
         scope.launch { rotation.animateTo(targetRotation, tween(600)) }
+
     }
 
     val painter = painterResource(card.image)
@@ -785,7 +794,6 @@ fun ReactionLayer(
     modifier: Modifier = Modifier
 ) {
     Box(modifier = modifier.fillMaxSize()) {
-
         reactionList.forEach { reactionMessage ->
 
             val (alignment, baseOffset) = when (reactionMessage.seat) {
@@ -798,6 +806,7 @@ fun ReactionLayer(
             Box(
                 modifier = Modifier
                     .align(alignment)
+                    .zIndex(10000f)
                     .offset {
                         IntOffset(
                             baseOffset.x + reactionMessage.offsetX,
@@ -806,17 +815,11 @@ fun ReactionLayer(
                     }
                     .size(reactionMessage.size.dp)
             ) {
-                AnimatedVisibility(
-                    visible = true,
-                    enter = scaleIn(initialScale = 0.4f) + fadeIn(),
-                    exit = scaleOut(targetScale = 0.4f) + fadeOut()
-                ) {
+
                         RenderLottieFile(
                             file = reactionMessage.reaction.showReactionAnimation() ?: 0,
                             modifier = Modifier.fillMaxSize()
                         )
-
-                }
             }
         }
     }

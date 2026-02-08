@@ -17,6 +17,7 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.scrollable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
@@ -30,6 +31,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.layout.wrapContentWidth
@@ -76,6 +78,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
@@ -216,11 +221,13 @@ private fun Content(viewModel: HomeViewModel,onEditAvatarClick:()->Unit){
 
             Column(
                 modifier = Modifier
-                    .width(300.dp)
+                    .wrapContentWidth()
                     .padding(20.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
+                var buttonRowWidth by remember { mutableStateOf(0) }
+
 
                 Box{
                     AvatarImage(avatar = uiState.avatar)
@@ -246,6 +253,10 @@ private fun Content(viewModel: HomeViewModel,onEditAvatarClick:()->Unit){
 
                 EditTextField(
                     value = uiState.nickName,
+                    modifier = Modifier
+                        .widthIn(max = with(LocalDensity.current) { buttonRowWidth.toDp() })
+                        .onGloballyPositioned { layoutCoordinates ->
+                        },
                     onValueChange = { input ->
                         val filtered = input.filter { !it.isWhitespace() }
                         viewModel.onIntent(HomeIntent.NickNameChanged(filtered))
@@ -255,7 +266,11 @@ private fun Content(viewModel: HomeViewModel,onEditAvatarClick:()->Unit){
                 Spacer(Modifier.height(15.dp))
 
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .wrapContentWidth()
+                        .onSizeChanged { size ->
+                            buttonRowWidth = size.width
+                        },
                     horizontalArrangement = Arrangement.SpaceBetween
                 ){
 
@@ -267,6 +282,7 @@ private fun Content(viewModel: HomeViewModel,onEditAvatarClick:()->Unit){
                             style = MaterialTheme.typography.labelLarge)
                     }
 
+                    Spacer(modifier = Modifier.width(10.dp))
                     buttonWithoutRipple(
                         enabled = InputValidator.isValidIdOrName(uiState.nickName),
                         onClick = { showJoinRoomCard.value=true }
@@ -300,9 +316,6 @@ private fun Content(viewModel: HomeViewModel,onEditAvatarClick:()->Unit){
 
 
 }
-
-//0xFF0c5983
-//0xFF076691
 
 @Composable
 private fun AvatarImage(modifier: Modifier=Modifier,avatar: Avatar,size: Dp =100.dp){
@@ -410,23 +423,23 @@ private fun AvatarDrawerContent(onChoose:(Avatar)->Unit){
 
 @Composable
 fun JoinRoomCard(
-    roomId:String,
-    onTextChange:(String)->Unit,
-    onSubmit:()->Unit,
+    roomId: String,
+    onTextChange: (String) -> Unit,
+    onSubmit: () -> Unit,
     onCancelClick: () -> Unit,
-){
-
-    Box( modifier = Modifier
-        .fillMaxSize()
-        .verticalScroll(rememberScrollState())
-        .background(Color.Black.copy(alpha = 0.5f))
-        .zIndex(1f)
-        .pointerInput(Unit) {detectTapGestures { onCancelClick() }},
-        contentAlignment = Alignment.Center){
-
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.5f))
+            .zIndex(1f)
+            .pointerInput(Unit) { detectTapGestures { onCancelClick() } },
+        contentAlignment = Alignment.Center
+    ) {
         Card(
             modifier = Modifier
-                .width(300.dp)
+                .wrapContentWidth()
+                .verticalScroll(rememberScrollState())
                 .padding(16.dp)
                 .pointerInput(Unit) {
                     detectTapGestures {}
@@ -435,18 +448,23 @@ fun JoinRoomCard(
                 containerColor = Color.White
             )
         ) {
-
             Column(
-                modifier = Modifier.padding(16.dp)
+                modifier = Modifier
+                    .wrapContentHeight()
+                    .padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-
+                var buttonRowWidth by remember { mutableStateOf(0) }
 
                 EditTextField(
                     value = roomId,
+                    modifier = Modifier
+                        .widthIn(max = with(LocalDensity.current) { buttonRowWidth.toDp() })
+                        .onGloballyPositioned { layoutCoordinates ->
+                        },
                     onValueChange = { input ->
                         val filtered = input.filter { !it.isWhitespace() }
                         onTextChange(filtered)
-
                     },
                     placeholder = "Room Id"
                 )
@@ -454,18 +472,24 @@ fun JoinRoomCard(
                 Spacer(Modifier.height(15.dp))
 
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier
+                        .wrapContentWidth()
+                        .onSizeChanged { size ->
+                            buttonRowWidth = size.width
+                        },
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically
-
-                ){
-
+                ) {
                     buttonWithoutRipple(
                         onClick = { onSubmit() },
-                        enabled = roomId.length==6
-                    ){
-                        Text("Join Room",
-                            style = MaterialTheme.typography.labelLarge)
+                        enabled = roomId.length == 6,
+                        shape = RoundedCornerShape(50)
+                    ) {
+                        Text(
+                            "Join Room",
+                            style = MaterialTheme.typography.labelLarge,
+                            modifier = Modifier.padding(vertical = 2.dp)
+                        )
                     }
 
                     OutlinedButton(
@@ -474,26 +498,19 @@ fun JoinRoomCard(
                             width = 1.dp,
                             color = MaterialTheme.colorScheme.darkPrimaryBlue
                         ),
-
                         colors = ButtonDefaults.outlinedButtonColors(
                             contentColor = MaterialTheme.colorScheme.darkPrimaryBlue
                         ),
-                        contentPadding = PaddingValues(
-                            horizontal = 20.dp
-                        )
+                        contentPadding = PaddingValues(horizontal = 20.dp)
                     ) {
-                        Text("Cancel",style = MaterialTheme.typography.labelLarge)
+                        Text(
+                            "Cancel",
+                            style = MaterialTheme.typography.labelLarge
+                        )
                     }
-
                 }
-
-
-
             }
-
-
         }
-
     }
 }
 
